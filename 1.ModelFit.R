@@ -1,7 +1,7 @@
 ## FlexCAT project
 ## (1) LCA: Model Fit 
 ## Tasos Psychogyiopoulos
-## c.05/10/2021/ m. 10.11.2021
+## c.05/10/2021/ m. 16.11.2021
 
 ## libraries
 library(tidyverse)
