@@ -6,7 +6,7 @@
 ## libraries
 library(tidyverse)
 ## data from github
-load(url("https://github.com/tasospsy/FlexCAT/blob/main/Data/SVL_clean.Rdat?raw=true"))
+source(url("https://raw.githubusercontent.com/tasospsy/FlexCAT/main/0.Cleaning-Translation.R"))
 
 ## Subsets of Data
 X08 <- tdat %>% slice_sample(prop = 0.8) # random proportion of 80%
@@ -18,7 +18,7 @@ X05 <- tdat %>% slice_sample(prop = 0.5)
 library(poLCA)
 #### ESTIMATION FUN ####
 esT <-  function(X, 
-                 N.class = c('fixed', 'explore'),
+                 n.class = c('fixed', 'explore'),
                  to ,
                  by = c("aic", "bic", "aic3", "aicc", "caic"), 
                  Rep = 1,
@@ -47,24 +47,26 @@ esT <-  function(X,
     tmp$`N/Npar` <- .out$N/.out$npar
     return(list(model = .out, summary = tmp))
   }
-  if(N.class == 'fixed'){
+  if(n.class == 'fixed'){
     i <- 0L
     sum <- list()
     repeat{
       i <- i + 1
       .t <- .fi(i)
       sum[[i]] <- .t$summary
-        if (i == to) break
+        if (i == to | .t$summary$resid.df < 0) break
       }
     
     sum <- do.call(rbind ,sum)
+    
+    ## ! stores the params only for the last model
     .t$param$Pw <- .t$model$P #P(x = c)
     .t$param$crP <- .t$model$probs# P(yj = y| x= c)
     .t$param$posP <- .t$model$posterior # P(x=c|vj = y)
     
     return(list(table.stat = sum, model = .t))
   }
-  if(N.Class == 'explore'){
+  if(n.class == 'explore'){
     i <- 0L
     fit <- bestfit <- 1e100
     sum <- list()
@@ -89,27 +91,29 @@ esT <-  function(X,
   }
 }
 
+start.script <- Sys.time()
+
 ## Output "EXPLORE"
-out01  <- esT(N.class = 'explore', X = X01, by = 'aic')
-out02  <- esT(N.class = 'explore', X = X02, by = 'aic')
-out05  <- esT(N.class = 'explore', X = X05, by = 'aic')
-out08  <- esT(N.class = 'explore', X = X08, by = 'aic')
-outall <- esT(N.class = 'explore', X = tdat, by = 'aic')
+out01  <- esT(n.class = 'explore', X = X01, by = 'aic')
+out02  <- esT(n.class = 'explore', X = X02, by = 'aic')
+out05  <- esT(n.class = 'explore', X = X05, by = 'aic')
+out08  <- esT(n.class = 'explore', X = X08, by = 'aic')
+#outall <- esT(n.class = 'explore', X = tdat, by = 'aic')
 
 out.list <- list(
     out01$table.stat,
     out02$table.stat,
     out05$table.stat,
-    out08$table.stat,
-    outall$table.stat
+    out08$table.stat
+    #,outall$table.stat
     )
 
 ## Output "FIXED"
-out.fix01 <- esT(N.class = 'fixed', to = 30, X = X01)
-out.fix02 <- esT(N.class = 'fixed', to = 30, X = X02)
-out.fix05 <- esT(N.class = 'fixed', to = 30, X = X05)
-out.fix08 <- esT(N.class = 'fixed', to = 30, X = X08)
-out.fixall <- esT(N.class = 'fixed', to = 30, X = tdat)
+out.fix01 <- esT(n.class = 'fixed', to = 30, X = X01)
+out.fix02 <- esT(n.class = 'fixed', to = 30, X = X02)
+out.fix05 <- esT(n.class = 'fixed', to = 30, X = X05)
+out.fix08 <- esT(n.class = 'fixed', to = 30, X = X08)
+#out.fixall <- esT(n.class = 'fixed', to = 30, X = tdat)
 
 out.fix.list <- list(
   out.fix01$table.stat ,
@@ -121,20 +125,22 @@ out.fix.list <- list(
 
 ## Visualization
 
-plot.fun <- function(x){
-  plotICs <- x %>% 
-    dplyr::select(aic, bic, aic3, aicc, caic, classes) %>% 
-    filter(classes > 2) %>% 
-    gather(key = "Index", value = "value", -classes) %>% 
+plot.fun <- function(d){
+  plotICs <- d %>% 
+    filter(resid.df >=0) %>% 
+    dplyr::select(aic, bic, aic3, aicc, caic, classes, N) %>% 
+    filter(classes > 01) %>%  #bc the 1st ruins the plot line
+    gather(key = "Index", value = "value", -classes, -N) %>% 
     ggplot() + 
     geom_line(aes(x = classes, y = value, color = Index), 
               alpha = 1, show.legend = TRUE) +
-    scale_x_continuous(limits = c(0, 25), breaks = 0:25) +
+    scale_x_continuous(limits = c(0, 30), breaks = 0:30) + 
+    
     theme_bw()
   # facet_wrap(~Index, scales = 'free', nrow = 2)
   return(plotICs)
 }
-
+plot.fun(out.fix01$table.stat)
 # Explored
 plot.list <- map(out.list, plot.fun)
 
@@ -143,10 +149,15 @@ plot.fix.list <- map(out.fix.list, plot.fun)
 
 library(patchwork)
 
-allplots <- plot.list[[1]] / plot.list[[2]] / plot.list[[3]] / plot.list[[4]] / plot.list[[5]]
+all.exploreplots <- plot.list[[1]] / plot.list[[2]] / plot.list[[3]] / plot.list[[4]]
+all.exploreplots
 
-all.fixplots <- #plot.fix.list[[1]] /
+all.fixplots <- plot.fix.list[[1]] /
   plot.fix.list[[2]] /
   plot.fix.list[[3]] /
   plot.fix.list[[4]]
+all.fixplots
 
+end.script <- Sys.time()
+end.script - start.script
+# Time difference of 34.22859 mins
