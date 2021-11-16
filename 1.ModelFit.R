@@ -134,6 +134,15 @@ plot.fun <- function(d){
     ggplot() + 
     geom_line(aes(x = classes, y = value, color = Index), 
               alpha = 1, show.legend = TRUE) +
+    geom_point(data = d.min <- d %>% 
+                 filter(resid.df >=0) %>% 
+                 dplyr::select(aic, bic, aic3, aicc, caic, classes) %>%
+                 gather(key = "Index", value = "value", -classes) %>% 
+                 group_by(Index) %>%
+                 summarize(minvalue = min(value), 
+                           whichclass = classes[which(value == min(value))]),
+               aes(x = whichclass, y = minvalue, color = Index)) +
+    
     scale_x_continuous(limits = c(0, 30), breaks = 0:30) + 
     
     theme_bw()
@@ -149,13 +158,15 @@ plot.fix.list <- map(out.fix.list, plot.fun)
 
 library(patchwork)
 
-all.exploreplots <- plot.list[[1]] / plot.list[[2]] / plot.list[[3]] / plot.list[[4]]
+all.exploreplots <- plot.list[[1]] / plot.list[[2]] / plot.list[[3]] / plot.list[[4]] +
+  plot_annotation(title = "1. N = 421 | 2. N = 842 | 3. N = 2105 | 4. N = 3368")
 all.exploreplots
 
 all.fixplots <- plot.fix.list[[1]] /
   plot.fix.list[[2]] /
   plot.fix.list[[3]] /
-  plot.fix.list[[4]]
+  plot.fix.list[[4]] +
+  plot_annotation(title = "1. N = 421 | 2. N = 842 | 3. N = 2105 | 4. N = 3368")
 all.fixplots
 
 end.script <- Sys.time()
