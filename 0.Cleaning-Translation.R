@@ -18,15 +18,16 @@ tdat  <-  dat %>%
 # save(tdat, file = "SVL_clean.Rdat")
 
 #### TRANSLATE THE VARIABLE NAMES ####
-library(labelled)
-NL <- var_label(dat[,20:35]) %>% 
-  unlist() 
-library(deeplr)
-EN <- translate2(NL,
-                 target_lang = "EN",
-                 source_lang = "NL",
-                 auth_key = "1a0547bd-4258-c398-9af6-35441324b8ee:fx")
-
-VAR_labels <- tibble(VAR = paste("LG",1:16, sep = ""),
-                     NL_labels = NL,
-                     EN_Labels = EN)
+# library(labelled)
+# NL <- var_label(dat[,20:35]) %>% 
+#   unlist() 
+# library(deeplr)
+# EN <- translate2(NL,
+#                  target_lang = "EN",
+#                  source_lang = "NL",
+#                  auth_key = "1a0547bd-4258-c398-9af6-35441324b8ee:fx")
+# 
+# VAR_labels <- tibble(VAR = paste("LG",1:16, sep = ""),
+#                      NL_labels = NL,
+#                      EN_Labels = EN)
+# 
