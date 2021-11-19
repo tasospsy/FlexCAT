@@ -10,12 +10,20 @@ setwd(mydir)
 library(haven)
 dat <- read_sav("SVL-i_Vlaanderen_TOT2_HV.sav")
 
+## Cleaning
 tdat  <-  dat %>% 
   dplyr::select(LG1:LG16) %>%         # select specific cols
   mutate(across(.cols = everything(), 
                 ~ if_else(.x <= 2, 0, 1))) %>% # make all 0 and 1s
   data.frame()                 #  transform to df
 # save(tdat, file = "SVL_clean.Rdat")
+
+## Subseting
+## Subsets of Data
+X08 <- tdat %>% slice_sample(prop = 0.8) # random proportion of 80%
+X01 <- tdat %>% slice_sample(prop = 0.1)
+X02 <- tdat %>% slice_sample(prop = 0.2)
+X05 <- tdat %>% slice_sample(prop = 0.5)
 
 #### TRANSLATE THE VARIABLE NAMES ####
 # library(labelled)
