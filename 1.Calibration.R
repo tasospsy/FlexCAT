@@ -6,5 +6,7 @@
 library(tidyverse)
 library(poLCA)
 library(patchwork)
-## Data
+## Data + Functions
 source("0.Cleaning-Translation.R")
+source("0.Functions.R")
+source("0.FunctionsViz.R")
