@@ -1,61 +1,57 @@
 ## Compare total density
+## 20.11.2021
+
+## Function to extract density from the nested lists output of
+## our simulations, by which model minimizes the ICs. 
+byIndexFUN <- function(arg1,
+                     arg2){
+  best <- Tasos[[arg1]]$param$dens[[which.min(Tasos[[arg1]]$table.stat[,arg2])]]
+  return(best)
+}
+
+## Constructing the table with best model params by Information Criterion
+ICanalysis <- expand_grid(N.size =  c(1, 2, 3, 4),
+                      Index = c('aic', 'bic', 'aic3', 'aicc', 'caic')) %>% 
+  add_column(dens = map2(ICanalysis$N.size, ICanalysis$Index, byIndexFUN))
+## add total density
+ICanalysis <- ICanalysis %>% 
+  add_column(total.dens = imap(ICanalysis$dens, 
+                               ~start.level(R = Tasos[[1]]$param$R[[1]], # just to be sure
+                                           .)$px.plus))
+## Add a row with params of the true model
+ICanalysis <- ICanalysis %>% 
+  add_row(N.size = c(1,2,3,4), Index = "TrueModel", dens = list(Truedens), 
+          total.dens = list(start.level(R = TrueR, Truedens)$px.plus), .before = 1)
+#
+
+## LETS PLOT
+
+wide <- unnest_wider(ICanalysis, total.dens)
+long <- unnest_longer(ICanalysis, total.dens)
+
+library(ggridges)
+plot1 <- unnest_longer(ICanalysis, total.dens) %>% 
+  dplyr::select(-dens) %>% 
+  group_by(Index, N.size) %>% 
+  ggplot(aes(x=total.dens, y = Index, fill=Index, color = Index)) +
+  geom_density_ridges(alpha=.3,show.legend = FALSE)+
+  facet_wrap(~N.size) +
+  theme_minimal()
+plot1
+
+plot2<- unnest_longer(ICanalysis, total.dens) %>% 
+  dplyr::select(-dens) %>% 
+  group_by(Index, N.size) %>% 
+  ggplot(aes(x=total.dens, fill=Index, color = Index)) +
+  stat_ecdf(geom = "step") + 
+  facet_wrap(~N.size) +
+  theme_minimal()
+plot2
 
 
-# N[2] = 5000
-Tasos[[2]]
 
-summin <- Tasos[[2]]$table.stat %>% 
-  dplyr::select(aic, bic, aic3, aicc, caic, classes, N) %>%
-  gather(key = "Index", value = "value", -classes, -N) %>% 
-  group_by(Index) %>%
-  summarize(minvalue = min(value), 
-            whichclass = classes[which(value == min(value))])
 
-# Score Densities 
-bestAIC  <- Tasos[[2]]$param$dens[[16]]
-bestAIC3 <- Tasos[[2]]$param$dens[[16]]
-bestAICc <- Tasos[[2]]$param$dens[[16]]
-bestBIC  <- Tasos[[2]]$param$dens[[9]]
-bestcAIC <- Tasos[[2]]$param$dens[[11]]
-True     <- Tasos[[2]]$param$dens[[15]]
-
-# total score densities
-R <- Tasos[[2]]$param$R[[1]] # same for all 5 
-totaldAIC  <- cbind(start.level(R, bestAIC)$px.plus, rep("AIC", 17))
-totaldAIC3 <- cbind(start.level(R, bestAIC3)$px.plus, rep("AIC3", 17))
-totaldAICc <- cbind(start.level(R, bestAICc)$px.plus, rep("AICc", 17))
-totaldBIC  <- cbind(start.level(R, bestBIC)$px.plus, rep("BIC", 17))
-totaldcAIC <- cbind(start.level(R, bestcAIC)$px.plus, rep("cAIC", 17))
-totalTrue  <- cbind(start.level(R, True)$px.plus, rep("True", 17))
-
-alltotal <- rbind(totaldAIC,
-                  totaldAIC3,
-                  totaldAICc,
-                  totaldBIC,
-                  totaldcAIC,
-                  totalTrue) %>% as.data.frame() 
-## Tidy results
-testtbl <- tibble(
-  Index = c("AIC", "AIC3", "AICc", "BIC", "cAIC", "True"),
-  N = 5000,
-  Dataset = 1,
-  density = list(bestAIC, bestAIC3, bestAICc, bestBIC, bestcAIC, True),
-  total.density = list(totaldAIC, totaldAIC3, totaldAICc,totaldBIC, totaldcAIC, totalTrue )
-)
-
-test <- testtbl %>% 
-  filter(Index == 'AIC', N == 5000) %>% 
-  dplyr::select(total.density)
+ 
 
 
 
-
-
-all.total.plot <- alltotal %>%
-    group_by(V2) %>% 
-    ggplot(aes(x=V1, group=V2, fill=V2, color = V2)) +
-    geom_density(adjust=1.5, alpha=.2) +
-    theme_minimal()
-all.total.plot
-
-ks.test(as.numeric(totaldAIC[,1]), as.numeric(totaldBIC[,1]))

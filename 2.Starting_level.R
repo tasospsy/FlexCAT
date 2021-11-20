@@ -22,6 +22,12 @@ start.level <- function(R, density){
     }
   }
   ## TOTAL SCORE DENSITY! 
-  px.plus <-  t(Q)%*%density 
+  if(is.matrix(density)) px.plus <-  t(Q)%*%density 
+  if(is.numeric(density)) {
+    density <- matrix(density, ncol = 1)
+    px.plus <-  t(Q)%*%density 
+  }
   return(list(r.plus = r.plus, x.plus = x.plus, Q = Q, px.plus = px.plus))
 }
+
+

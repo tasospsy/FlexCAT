@@ -5,29 +5,104 @@
 
 library(tidyverse)
 library(poLCA)
-
+library(furrr) 
 ## ------------
 ### SIMULATIONS
 ## ------------
 
 ## true model
-pseudoTrue <- esT(n.class = 'fixed', to = 15, X = tdat)
-TrueP <- pseudoTrue$param$crP[[15]]
 Trueclass <- 15
+pseudoTrue <- esT(n.class = 'fixed', to = Trueclass, X = tdat)
+TrueP <- pseudoTrue$param$crP[[Trueclass]]
 Ntrue <-  nrow(tdat) # N = 4211
-TrueJ <- ncol(pseudoTrue$param$R[[15]]) # 16
-TruePw <- pseudoTrue$param$Pw[[15]]
+TrueR <- pseudoTrue$param$R[[Trueclass]]
+TrueJ <- ncol(TrueR) # 16
+TruePw <- pseudoTrue$param$Pw[[Trueclass]]
+Truedens <- pseudoTrue$param$dens[[Trueclass]]
+
 ## simulate data using poLCA
 Ns <- c(2500, 5000, 7500, 10000)
-dat <- list()
-for(i in 1:length(Ns)) {
-  dat[[i]] <- poLCA.simdata(N = Ns[i], 
-                            probs = TrueP, 
-                            nclass = Trueclass, 
-                            ndv = TrueJ,
-                            P = TruePw) 
-  dat[[i]] <- dat[[i]]$dat
-}
+Reps <- 1000
+set.seed(1992)
+plan(multisession)
+startt <- Sys.time()
+dat <- replicate(Reps,
+                 future_map(Ns, ~ poLCA.simdata(N = ., 
+                                                probs = TrueP, 
+                                                nclass = Trueclass, 
+                                                ndv = TrueJ,
+                                                P = TruePw)$dat),
+                 simplify = FALSE)
+simBIGdat <- dat
+(endt <- Sys.time() - startt)
+# Time difference of 5.341289 mins
+# save(file = "simBIGdat.Rdat", simBIGdat) #3.2GB!
+
+## BIG SIMULATION !
+## ! Time intense !
+
+only5reps <- dat[1:5]
+
+plan(multisession)
+set.seed(1992)
+startt <- Sys.time()
+smallRES <- future_map(only5reps, ~future_map(.,
+                                             ~ esT(n.class = 'fixed', to = 25, X = .-1)))
+(endt <- Sys.time() - startt)
+
+
+
+
+## ------------------------
+## Small example for testing
+
+source('FlexCAT/_Replicate_example.R')
+## small true model parameters
+smallP   <- prbs
+smallpA  <- pA
+smallL   <- L
+small    <- R
+smallPw  <- Pw
+smallpis <- pis
+smTrueclass <- 2
+# Reps 
+smallReps <- 100
+## small simdata 
+smallNs <- c(25, 50, 75, 100)
+plan(multisession)
+startt <- Sys.time()
+smalldat <- replicate(smallReps,
+                      future_map(smallNs, ~ poLCA.simdata(N = ., 
+                                         probs = smallP, 
+                                         nclass = smTrueclass, 
+                                         ndv = smallL,
+                                         P = smallPw)$dat),
+                      simplify = FALSE)
+## [[1, 2, ..., 100]][[1,2,...,4]]
+(endt <- Sys.time() - startt)
+
+## Calculate cells 
+smallCells <- expand.grid(R <- 1:100,
+                         N <- smallNs,
+                         c <- 1:5)
+# n 5*4*100 = 2000
+
+## Time intense 
+library(furrr) 
+
+plan(multisession)
+set.seed(1992)
+startt <- Sys.time()
+smallRES <- future_map(smalldat, ~future_map(.,
+                                 ~ esT(n.class = 'fixed', to = 5, X = .-1)))
+(endt <- Sys.time() - startt)
+## 20sec
+
+smallRES[[1]][[4]]$param$dens
+smallRES[[100]][[4]]$table.stat
+
+
+## ---- 1 Replication of real example ----#
 
 ## Estimate Mj models with:
 # M ={1,2,...,4} = length(dat)
@@ -35,26 +110,18 @@ for(i in 1:length(Ns)) {
 # with M15 the true model
 
 ## Time intense 
-library(furrr) 
-library(tictoc)
-set.seed(1992)
-
 plan(multisession)
-
-tic()
+set.seed(1992)
+startt <- Sys.time()
 Tasos <- future_map(dat, ~ esT(n.class = 'fixed', to = 25, X = .-1),
                      .options = furrr_options(seed = TRUE))
-toc()
+(endt <- Sys.time() - startt)
 ## 70mins 
 
-Taslist <- list(Tasos[[1]]$table.stat,
-                Tasos[[2]]$table.stat,
-                Tasos[[3]]$table.stat,
-                Tasos[[4]]$table.stat)
 #save(file = "Taslist.Rdat", Taslist)
-plotall <- map(Taslist, plot.fun, show.true.in = 15)
+tableall <- map(Tasos, ~.x$table.stat) 
+plotall <- map(tableall, plot.fun, show.true.in = 15)
 plotall
-
 
 library(patchwork)
 all.plot <- plotall[[1]]/
