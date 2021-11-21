@@ -3,8 +3,8 @@
 ## Tasos Psychogyiopoulos
 ## c. 17.11.2021 / m. 19.11.2021
 
-library(tidyverse)
-library(poLCA)
+# setwd("FlexCAT/")  !!
+# source("1.Calibration.R") !!
 library(furrr) 
 ## ------------
 ### SIMULATIONS
@@ -114,7 +114,7 @@ smallRES[[1]][[4]]$param$dens
 smallRES[[100]][[4]]$table.stat
 
 
-## ---- 1 Replication of real example ----#
+## ---- OLD OLD OLD ! Change it----#
 
 ## Estimate Mj models with:
 # M ={1,2,...,4} = length(dat)
