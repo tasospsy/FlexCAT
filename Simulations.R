@@ -41,16 +41,28 @@ simBIGdat <- dat
 ## BIG SIMULATION !
 ## ! Time intense !
 
-only5reps <- dat[1:5]
+## A tibble with the datasets and the N reps
+tbl <- tibble(only5reps) %>% 
+  add_column(Rep = 1:nrow(tbl), .before = 1) %>% 
+  rename('Dataset' = only5reps) %>% 
+  unnest_longer(col = Dataset) 
+## Add column of Ns
+tbl <- tbl %>% 
+  add_column(N = unlist(imap(tbl$Dataset, ~print(nrow(.x)))), .after = 1)
 
-plan(multisession)
+## Add models from the simulations
+plan(multisession, workers = 7 )
 set.seed(1992)
 startt <- Sys.time()
-smallRES <- future_map(only5reps, ~future_map(.,
-                                             ~ esT(n.class = 'fixed', to = 25, X = .-1)))
+tblmodels <- tbl %>% 
+  add_column(Model = future_imap(tbl$Dataset, 
+                                 ~ esT(n.class = 'fixed', to = 25, X = .-1)))
 (endt <- Sys.time() - startt)
+# Time difference of 2.914978 hours
+# save(file = "tblmodels.Rdat", tblmodels)
 
-
+ 
+  
 
 
 ## ------------------------
