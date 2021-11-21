@@ -1,6 +1,36 @@
 ## Compare total density
 ## 20.11.2021
 
+## Main analysis after big simulations
+load("tblmodels.Rdat")
+# Adding column with table summary per rep
+tbltbl <- tblmodels %>% 
+  add_column(Summary = map(tblmodels$Model,~.x$table.stat))
+## Adding column with list of densities per rep
+tbldens <- tbltbl %>% 
+  add_column(Density = imap(tblmodels$Model, ~.x$param$dens))
+## Adding column with density per Model
+letssee <- unnest_longer(tbldens, col = Density)
+## Adding Model's number of classes
+tblclass <- letssee %>% 
+  add_column(nClasses = rep(1:25, 20), .before = 6) # Idont like it
+## Adding column with total denisty
+final <- tblclass %>% 
+  add_column(Total.D = imap(tblclass$Density,
+                            ~start.level(R = tblclass$Model[[1]]$param$R[[1]], # same for all
+                                         .)$px.plus)) %>% 
+  dplyr::select(-Model, -Dataset)
+final
+
+### tests 
+test <- final %>% 
+  group_by(N) %>% 
+  dplyr::select(-Summary, -Density)
+
+
+
+# Old output 
+
 ## Function to extract density from the nested lists output of
 ## our simulations, by which model minimizes the ICs. 
 byIndexFUN <- function(arg1,
