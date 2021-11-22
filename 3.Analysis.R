@@ -3,17 +3,30 @@
 ## Tasos Psychogyiopoulos
 ## 20.11.2021
 
+## Plot the results (only 1 rep? or few?)
+plotall <- map(tableall, plot.fun, show.true.in = 15)
+plotall
+
+all.plot <- plotall[[1]]/
+  plotall[[2]]/
+  plotall[[3]]/
+  plotall[[4]]
+
 ## Main analysis after big simulations
 setwd("/Users/tasospsy/Google Drive/_UvA/Master Thesis/")
 load("tblmodels.Rdat")
 # Adding column with table summary per rep
-tbltbl <- tblmodels %>% 
-  add_column(Summary = map(tblmodels$Model,~.x$table.stat))
-## Adding column with list of densities per rep
-tbldens <- tbltbl %>% 
-  add_column(Density = imap(tblmodels$Model, ~.x$param$dens))
+step1 <- tblmodels %>% 
+  add_column(SummaryTable = map(tblmodels$Model,~.x$table.stat))
+
+## Adding column with list of densities per replication
+step2 <- step1 %>% 
+  add_column(Density = imap(step1$Model, ~.x$param$dens))
+
+
 ## Adding column with density per Model
-letssee <- unnest_longer(tbldens, col = Density)
+step3 <- unnest_longer(step2, col = Density)
+
 ## Adding Model's number of classes
 tblclass <- letssee %>% 
   add_column(nClasses = rep(1:25, 20), .before = 6) # Idont like it

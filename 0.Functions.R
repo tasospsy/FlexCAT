@@ -2,6 +2,13 @@
 ## (0) Functions
 ## Tasos Psychogyiopoulos
 
+## Load or Install packages Function 
+load.or.install <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[,1])]
+  if (length(new.pkg)) install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
 ## ----------------------------
 ## A. FUNCTIONS for CALIBRATION
 ## ----------------------------

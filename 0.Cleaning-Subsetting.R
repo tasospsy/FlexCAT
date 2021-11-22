@@ -3,11 +3,14 @@
 ## Tasos Psychogyiopoulos
 ## c.05/10/2021
 #
-library(tidyverse)
+
+## load required packages
+req_pckgs <- c("tidyverse", "haven", "poLCA", "patchwork", "furrr")
+load.or.install(req_pckgs)
+
 mydir <- "/Users/tasospsy/Google Drive/_UvA/Master Thesis/"
 setwd(mydir)
-
-library(haven)
+## Read data
 dat <- read_sav("SVL-i_Vlaanderen_TOT2_HV.sav")
 
 ## Cleaning

@@ -5,12 +5,11 @@
 
 # setwd("FlexCAT/")  !!
 # source("1.Calibration.R") !!
-library(furrr) 
 ## ------------
 ### SIMULATIONS
 ## ------------
 
-## true model
+## Specify the true  model
 Trueclass <- 15
 pseudoTrue <- esT(n.class = 'fixed', to = Trueclass, X = tdat)
 TrueP <- pseudoTrue$param$crP[[Trueclass]]
@@ -40,21 +39,26 @@ simBIGdat <- dat
 
 ## BIG SIMULATION !
 ## ! Time intense !
+load("/Users/tasospsy/Google Drive/_UvA/Master Thesis/simBIGdat.Rdat")
 
 ## A tibble with the datasets and the N reps
-tbl <- tibble(only5reps) %>% 
-  add_column(Rep = 1:nrow(tbl), .before = 1) %>% 
-  rename('Dataset' = only5reps) %>% 
+tbldat <- tibble(simBIGdat) 
+tbldat <- tbldat %>% 
+  add_column(Rep = 1:nrow(tbldat), .before = 1) %>% 
+  rename('Dataset' = simBIGdat) %>% 
   unnest_longer(col = Dataset) 
-## Add column of Ns
-tbl <- tbl %>% 
-  add_column(N = unlist(imap(tbl$Dataset, ~print(nrow(.x)))), .after = 1)
 
-## Add models from the simulations
+## Add column of Ns
+tbldat <- tbldat %>% 
+  add_column(N = unlist(imap(tbldat$Dataset, ~print(nrow(.x)))), .after = 1)
+
+## !! 
+## Estimate LCMs using the data from the simulations and add them as column 
+## next to the datasets. 
 plan(multisession, workers = 7 )
 set.seed(1992)
 startt <- Sys.time()
-tblmodels <- tbl %>% 
+tblmodels <- tbldat %>% 
   add_column(Model = future_imap(tbl$Dataset, 
                                  ~ esT(n.class = 'fixed', to = 25, X = .-1)))
 (endt <- Sys.time() - startt)
@@ -100,7 +104,6 @@ smallCells <- expand.grid(R <- 1:100,
 # n 5*4*100 = 2000
 
 ## Time intense 
-library(furrr) 
 
 plan(multisession)
 set.seed(1992)
@@ -135,7 +138,6 @@ tableall <- map(Tasos, ~.x$table.stat)
 plotall <- map(tableall, plot.fun, show.true.in = 15)
 plotall
 
-library(patchwork)
 all.plot <- plotall[[1]]/
   plotall[[2]]/
   plotall[[3]]/

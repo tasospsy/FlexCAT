@@ -1,3 +1,4 @@
+
 plot.fun <- function(d, show.true.in = NULL){
   plotICs <- d %>% 
     filter(resid.df >=0) %>% # if we have neg df 
