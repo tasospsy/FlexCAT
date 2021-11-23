@@ -19,83 +19,91 @@ load("tblmodels.Rdat")
 step1 <- tblmodels %>% 
   add_column(SummaryTable = map(tblmodels$Model,~.x$table.stat))
 
-## Adding column with list of densities per replication
+## Adding column with list of density per replication
 step2 <- step1 %>% 
   add_column(Density = imap(step1$Model, ~.x$param$dens))
-
-
 ## Adding column with density per Model
 step3 <- unnest_longer(step2, col = Density)
 
-## Adding Model's number of classes
-tblclass <- letssee %>% 
-  add_column(nClasses = rep(1:25, 20), .before = 6) # Idont like it
-## Adding column with total denisty
-#plan(multisession(workers = availableCores()-1))
-final <- tblclass %>% 
-  add_column(Total.D = imap(tblclass$Density,
-                            ~start.level(R = tblclass$Model[[1]]$param$R[[1]], # same for all
-                                         .)$px.plus)) %>% 
-  dplyr::select(-Model, -Dataset)
-final
+## Adding Model's number of classes (manually, but it's fine)
+step4 <- step3 %>% 
+  add_column(nClasses = rep(1:25, 20), .before = 6) %>% 
+  arrange(N) ## sort by 'N'. Note: crucial! because the seq. was by Rep,
+## but the 'unnest()' (see, below), works by N. 
+## So we need to alter the table sequence. 
 
-#save(file = "final.Rdat", final)
-
-### tests 
-test <- final %>% 
-  group_by(N) %>% 
-  dplyr::select(-Summary, -Density)
+## Adding column with total density (slow)
+startt <- Sys.time()
+step5 <- step4 %>% 
+  add_column(Total.D = imap(step4$Density,
+                            ~start.level(R = step4$Model[[1]]$param$R[[1]], # same for all
+                                         .)$px.plus)) 
+(endt <- Sys.time() - startt)
+## Time difference of 14.89169 mins
 
 
+## Adding 'stats' column which includes the statistics
+## of the corresponding model
+finalA <- step5 %>%  
+  add_column(stats = map2(.x = step5$nClasses,
+                          .y = seq_along(step5$SummaryTable),
+                          ~step5$SummaryTable[[.y]][.x,]))
 
-# Old output 
 
-## Function to extract density from the nested lists output of
-## our simulations, by which model minimizes the ICs. 
-byIndexFUN <- function(arg1,
-                     arg2){
-  best <- Tasos[[arg1]]$param$dens[[which.min(Tasos[[arg1]]$table.stat[,arg2])]]
-  return(best)
-}
 
-## Constructing the table with best model params by Information Criterion
-ICanalysis <- expand_grid(N.size =  c(1, 2, 3, 4),
-                      Index = c('aic', 'bic', 'aic3', 'aicc', 'caic')) %>% 
-  add_column(dens = map2(ICanalysis$N.size, ICanalysis$Index, byIndexFUN))
-## add total density
-ICanalysis <- ICanalysis %>% 
-  add_column(total.dens = imap(ICanalysis$dens, 
-                               ~start.level(R = Tasos[[1]]$param$R[[1]], # just to be sure
-                                           .)$px.plus))
-## Add a row with params of the true model
-ICanalysis <- ICanalysis %>% 
-  add_row(N.size = c(1,2,3,4), Index = "TrueModel", dens = list(Truedens), 
-          total.dens = list(start.level(R = TrueR, Truedens)$px.plus), .before = 1)
-#
+## rename 'N' to avoid conflict.
+## Note: I keep both 'N' columns and 'classes' columns to check for mistakes
+## We can deselect them later
+## Also, I unnest the 'stats' column. 
+## Eventually, we have a wide-format table with all the info. 
+finalB <- finalA %>% 
+  rename('Ndat' = N) %>% 
+  dplyr::select(-SummaryTable) %>% # We do not need the table anymore. 
+  unnest(stats)
+finalB
 
-## LETS PLOT
+finalS <- finalB %>% 
+  dplyr::select(Rep, N, Total.D, classes, aic, bic, aic3, aicc, caic, `N/Npar`, Entropy)
+#save(file = "finalS.Rdat", finalS)
+setwd("/Users/tasospsy/Google Drive/_UvA/Master Thesis/")
+load("finalS.Rdat")
 
-wide <- unnest_wider(ICanalysis, total.dens)
-long <- unnest_longer(ICanalysis, total.dens)
+## Make a tibble for the TRUE model
 
-library(ggridges)
-plot1 <- unnest_longer(ICanalysis, total.dens) %>% 
-  dplyr::select(-dens) %>% 
-  group_by(Index, N.size) %>% 
-  ggplot(aes(x=total.dens, y = Index, fill=Index, color = Index)) +
-  geom_density_ridges(alpha=.3,show.legend = FALSE)+
-  facet_wrap(~N.size) +
+
+## RQ. Does choice of fit measure affect the accuracy and bias of density?
+byAIC <- finalS %>% 
+  dplyr::select(Rep,N,Total.D,classes,aic) %>% 
+  group_by(Rep, N) %>% 
+  slice(which.min(aic)) %>% 
+  dplyr::select(-aic) %>% 
+  unnest_longer(Total.D)
+
+plotbyAIC <- byAIC %>% 
+  ggplot(aes(x=Total.D, group = Rep, color = factor(classes))) +
+  geom_density(alpha=.4)+ #, adjust = 0.5
+  facet_wrap(~N, ncol = 4) +
+  labs(title = "Total score density of best fitting models according to AIC.",
+       subtitle = "",
+       caption = "") +
   theme_minimal()
-plot1
+plotbyAIC
+  
 
-plot2<- unnest_longer(ICanalysis, total.dens) %>% 
-  dplyr::select(-dens) %>% 
-  group_by(Index, N.size) %>% 
-  ggplot(aes(x=total.dens, fill=Index, color = Index)) +
-  stat_ecdf(geom = "step") + 
-  facet_wrap(~N.size) +
-  theme_minimal()
-plot2
+
+gather(key = "IC", value = "value", -Rep, -N, -Total.D, -classes) %>% 
+  
+  
+
+
+
+print(Fitchoice, n = 127)
+print(finalS, n = 127)
+
+
+
+
+
 
 
 
