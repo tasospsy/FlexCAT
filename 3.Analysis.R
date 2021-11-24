@@ -3,7 +3,9 @@
 ## Tasos Psychogyiopoulos
 ## 20.11.2021
 
-## Plot the results (only 1 rep? or few?)
+## OLD Plot the results (only 1 rep? or few?)
+#save(file = "Taslist.Rdat", Taslist)
+tableall <- map(Tasos, ~.x$table.stat) 
 plotall <- map(tableall, plot.fun, show.true.in = 15)
 plotall
 
@@ -41,15 +43,12 @@ step5 <- step4 %>%
 (endt <- Sys.time() - startt)
 ## Time difference of 14.89169 mins
 
-
 ## Adding 'stats' column which includes the statistics
 ## of the corresponding model
 finalA <- step5 %>%  
   add_column(stats = map2(.x = step5$nClasses,
                           .y = seq_along(step5$SummaryTable),
                           ~step5$SummaryTable[[.y]][.x,]))
-
-
 
 ## rename 'N' to avoid conflict.
 ## Note: I keep both 'N' columns and 'classes' columns to check for mistakes
@@ -68,47 +67,79 @@ finalS <- finalB %>%
 setwd("/Users/tasospsy/Google Drive/_UvA/Master Thesis/")
 load("finalS.Rdat")
 
+## ---
 ## Make a tibble for the TRUE model
+load("TrueModel.Rdat")
+Truetbl <- tibble(N = c(2500,5000,7500,10000),
+                  classes = TrueModel$Trueclass,
+                  dens = list(TrueModel$Truedens),
+                  Rep = 1)
+Truetbl <- Truetbl %>% 
+  add_column(Total.D = imap(Truetbl$dens, ~start.level(R = TrueModel$TrueR,.)$px.plus))
+  
 
-
+## -----------------------------------------------------------------------
 ## RQ. Does choice of fit measure affect the accuracy and bias of density?
+
+
+## ---
+## AIC
+## ---
 byAIC <- finalS %>% 
   dplyr::select(Rep,N,Total.D,classes,aic) %>% 
   group_by(Rep, N) %>% 
   slice(which.min(aic)) %>% 
   dplyr::select(-aic) %>% 
-  unnest_longer(Total.D)
+  add_column(bestby = 'AIC')
 
-plotbyAIC <- byAIC %>% 
-  ggplot(aes(x=Total.D, group = Rep, color = factor(classes))) +
-  geom_density(alpha=.4)+ #, adjust = 0.5
-  facet_wrap(~N, ncol = 4) +
-  labs(title = "Total score density of best fitting models according to AIC.",
-       subtitle = "",
-       caption = "") +
-  theme_minimal()
-plotbyAIC
-  
+## ---
+## BIC
+## ---
+byBIC <- finalS %>% 
+  dplyr::select(Rep,N,Total.D,classes,bic) %>% 
+  group_by(Rep, N) %>% 
+  slice(which.min(bic)) %>% 
+  dplyr::select(-bic)  %>% 
+  add_column(bestby = 'BIC')
 
+## ---
+## AIC3
+## ---
+byAIC3 <- finalS %>% 
+  dplyr::select(Rep,N,Total.D,classes,aic3) %>% 
+  group_by(Rep, N) %>% 
+  slice(which.min(aic3)) %>% 
+  dplyr::select(-aic3) %>% 
+  add_column(bestby = 'AIC3')
 
-gather(key = "IC", value = "value", -Rep, -N, -Total.D, -classes) %>% 
-  
-  
+## ---
+## AICc
+## ---
+byAICc <- finalS %>% 
+  dplyr::select(Rep,N,Total.D,classes,aicc) %>% 
+  group_by(Rep, N) %>% 
+  slice(which.min(aicc)) %>% 
+  dplyr::select(-aicc) %>% 
+  add_column(bestby = 'AICc')
 
+## -- ALL COMBINED 
+all_by <- bind_rows(byAIC, byAIC3, byAICc, byBIC)
 
+## plot Fun
+library(RColorBrewer)
+densplotFun <- function(dat) {
+  plot <- dat %>% 
+    unnest_longer(Total.D) %>% 
+    ggplot() +
+    geom_density(aes(x=Total.D, group = Rep, color = factor(classes)), alpha=.4)+ #, adjust = 0.5
+    facet_wrap(~ bestby + N) +
+    
+    ## Add the true model
+    geom_density(data = Truetbl %>% 
+                   unnest_longer(Total.D), 
+                 aes(x = Total.D, fill = 'True Model\n 15 classes'),size = .1, alpha = .2)+
+    theme_minimal()
+}
 
-print(Fitchoice, n = 127)
-print(finalS, n = 127)
-
-
-
-
-
-
-
-
-
- 
-
-
-
+allplot <- densplotFun(all_by)
+allplot
