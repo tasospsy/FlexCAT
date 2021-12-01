@@ -10,6 +10,7 @@
 ## ------------
 
 ## Specify the true  model
+load("SVL_clean.Rdat")
 Trueclass <- 15
 pseudoTrue <- esT(n.class = 'fixed', to = Trueclass, X = tdat)
 TrueP <- pseudoTrue$param$crP[[Trueclass]]
@@ -29,22 +30,22 @@ TrueModel <- list(Trueclass = Trueclass,
 
 # save(file = "TrueModel.Rdat", TrueModel)
 
-## simulate data using poLCA
+## Generate data using poLCA
 Ns <- c(2500, 5000, 7500, 10000)
-Reps <- 10#00
+Reps <- 10
 set.seed(1992)
 plan(multisession)
 startt <- Sys.time()
-dat10 <- replicate(Reps,
+simBIGdat <- replicate(Reps,
                  future_map(Ns, ~ poLCA.simdata(N = ., 
                                                 probs = TrueP, 
                                                 nclass = Trueclass, 
                                                 ndv = TrueJ,
                                                 P = TruePw)$dat),
                  simplify = FALSE)
-simBIGdat <- dat
+
 (endt <- Sys.time() - startt)
-dat10
+simBIGdat
 # Time difference of 5.341289 mins
 # save(file = "simBIGdat.Rdat", simBIGdat) #3.2GB!
 #load("simBIGdat.Rdat")
@@ -52,7 +53,7 @@ dat10
 ## BIG SIMULATION !
 ## ! Time intense !
 load("/Users/tasospsy/Google Drive/_UvA/Master Thesis/simBIGdat.Rdat")
-
+dat10 <- simBIGdat[1:10]
 ## A tibble with the datasets and the N reps
 tbldat <- tibble(dat10) 
 tbldat <- tbldat %>% 
@@ -64,20 +65,25 @@ tbldat <- tbldat %>%
 tbldat <- tbldat %>% 
   add_column(N = unlist(imap(tbldat$Dataset, ~print(nrow(.x)))), .after = 1)
 
-## !! 5 Reps only
+## !! 10 Reps only
 ## Estimate LCMs using the data from the simulations and add them as column 
 ## next to the datasets. 
-plan(multisession)
+plan(multisession, workers = 7)
 set.seed(1992)
 startt <- Sys.time()
-tblmodels <- tbldat %>% 
+tblmodels10 <- tbldat %>% 
   add_column(Model = future_imap(tbldat$Dataset, 
-                                 ~ esT(n.class = 'fixed', to = 25, X = .-1)))
+                                 ~ esT(n.class = 'fixed', to = 25, 
+                                       X = .-1)))
 (endt <- Sys.time() - startt)
+
+## For 5 Reps:
 # Time difference of 2.914978 hours
 # save(file = "tblmodels.Rdat", tblmodels)
 
- 
+## For 10 Reps:
+# Time difference of 5.390989 hours
+#save(file = "tblmodels10.Rdat", tblmodels10)
   
 
 
