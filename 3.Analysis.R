@@ -145,12 +145,12 @@ byAICc <- finalS %>%
 all_by <- bind_rows(byAIC, byAIC3, byAICc, byBIC)
 
 ## FIRST PLOTTING
-## plot Fun
-densplotFun <- function(dat) {
+## p.+ plot Fun
+p.plusplotFun <- function(dat) {
   plot <- dat %>% 
     unnest_longer(Total.D) %>% 
     ggplot() +
-    geom_density(aes(x=Total.D, group = Rep, color = as.factor(classes)), alpha=.4)+ #, adjust = 0.5
+    geom_density(aes(x=Total.D, group = Rep, color = as.factor(classes)), alpha=.1)+ #, adjust = 0.5
     facet_wrap(~ bestby + N) +
     
     ## Add the true model
@@ -160,30 +160,67 @@ densplotFun <- function(dat) {
     theme_minimal()
 }
 
-allplotp.plus <- densplotFun(all_by)
-allplotdens
+allplotp.plus <- p.plusplotFun(all_by)
 allplotp.plus
+
+## p. plot Fun
+p.plotFun <- function(dat) {
+  plot <- dat %>% 
+    unnest_longer(Density) %>% 
+    ggplot() +
+    geom_density(aes(x=Density, group = Rep, color = as.factor(classes)), alpha=.1)+ #, adjust = 0.5
+    facet_wrap(~ bestby + N) +
+    
+    ## Add the true model
+    geom_density(data = Truetbl %>% 
+                   unnest_longer(Density), 
+                 aes( x=Density, fill = 'True Model\n 15 classes'),size = .1, alpha = .2)+
+    scale_x_log10()+
+    theme_minimal()
+}
+
+allplotp. <- p.plotFun(all_by)
+allplotp.
+
+## CUMULATIVE PLOTS
+CplotFun <- function(dat) {
+  plot <- dat %>% 
+    unnest_longer(Total.D) %>% 
+    ggplot() +
+    ecdf(aes(x=Total.D, group = Rep, color = as.factor(classes)))+ #, adjust = 0.5
+    facet_wrap(~ bestby + N) +
+    
+    ## Add the true model
+    ecdf(data = Truetbl %>% 
+                   unnest_longer(Total.D), 
+                 aes( x=Total.D, fill = 'True Model\n 15 classes'),size = .1)+
+    theme_minimal()
+}
+Cplus <- CplotFun(all_by)
 ## THEN testing the difference
-## Kolmogorov-Smirnov Test
+test <- KL.dist(all_by$Total.D[[1]], Truetbl$Total.D[[1]])
+## Distance
+library(philentropy)
 testall <- all_by %>% 
-  add_column(KS = unlist(imap(all_by$Total.D, 
-                              ~ks.test(.x, Truetbl$Total.D[[1]])$statistic))) %>% 
-  add_column(chisq = unlist(imap(all_by$Total.D, 
-                              ~chisq.test(.x, Truetbl$Total.D[[1]])$statistic))) %>% 
-  add_column(p.value = unlist(imap(all_by$Total.D, 
-                                 ~chisq.test(.x, Truetbl$Total.D[[1]])$p.value)))
-  
+  add_column(KL.ds.p.plus = unlist(imap(all_by$Total.D, 
+                          ~kullback_leibler_distance(.x, Truetbl$Total.D[[1]], 
+                                                     testNA = FALSE, unit ="log2")))) %>% 
+  add_column(KL.ds.p = unlist(imap(all_by$Density, 
+                                        ~kullback_leibler_distance(.x, Truetbl$Density[[1]], 
+                                                                   testNA = FALSE, unit ="log2"))))
+
 print(testall, n = 126)
 
-ksplotFun <- function(dat) {
+dist.plot <- function(dat) {
   plot <- dat %>% 
     group_by(N, Rep) %>% 
     ggplot() +
-    geom_density(aes(x=ks.test.D, color = bestby), alpha=.4, show.legend = FALSE)+ #, adjust = 0.5
+    geom_jitter(aes(x=KL.ds.p.plus, y =KL.ds.p,  color = as.factor(N)),
+               stat = "identity", alpha=.4, show.legend = FALSE)+ #, adjust = 0.5
     facet_wrap(~ bestby + N) +
     theme_minimal()
 }
-ksplot <- ksplotFun(testall)
-ksplot
+plot1 <- dist.plot(testall)
+plot1
 
 

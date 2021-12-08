@@ -31,17 +31,17 @@ TrueModel <- list(Trueclass = Trueclass,
 # save(file = "TrueModel.Rdat", TrueModel)
 
 ## Generate data using poLCA
-Ns <- c(2500, 5000, 7500, 10000)
-Reps <- 10
+Ns <- c(500, 1000, 5000, 10000)
+Reps <- 1000
 set.seed(1992)
 plan(multisession)
 startt <- Sys.time()
 simBIGdat <- replicate(Reps,
                  future_map(Ns, ~ poLCA.simdata(N = ., 
-                                                probs = TrueP, 
-                                                nclass = Trueclass, 
-                                                ndv = TrueJ,
-                                                P = TruePw)$dat),
+                                                probs = TrueModel$TrueP, 
+                                                nclass = TrueModel$Trueclass, 
+                                                ndv = TrueModel$TrueJ,
+                                                P = TrueModel$TruePw)$dat),
                  simplify = FALSE)
 
 (endt <- Sys.time() - startt)
@@ -85,8 +85,12 @@ tblmodels10 <- tbldat %>%
 # Time difference of 5.390989 hours
 #save(file = "tblmodels10.Rdat", tblmodels10)
   
-
-
+mem <- data.frame('object' = ls()) %>% 
+  dplyr::mutate(size_unit = object %>%sapply(. %>% get() %>% object.size %>% format(., unit = 'auto')),
+                size = as.numeric(sapply(strsplit(size_unit, split = ' '), FUN = function(x) x[1])),
+                unit = factor(sapply(strsplit(size_unit, split = ' '), FUN = function(x) x[2]), levels = c('Gb', 'Mb', 'Kb', 'bytes'))) %>% 
+  dplyr::arrange(unit, dplyr::desc(size)) %>% 
+  dplyr::select(-size_unit)
 ## ------------------------
 ## Small example for testing
 
