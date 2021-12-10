@@ -10,25 +10,26 @@
 ## ------------
 
 ## Specify the true  model
-load("SVL_clean.Rdat")
-Trueclass <- 15
-pseudoTrue <- esT(n.class = 'fixed', to = Trueclass, X = tdat)
-TrueP <- pseudoTrue$param$crP[[Trueclass]]
-Ntrue <-  nrow(tdat) # N = 4211
-TrueR <- pseudoTrue$param$R[[Trueclass]]
-TrueJ <- ncol(TrueR) # 16
-TruePw <- pseudoTrue$param$Pw[[Trueclass]]
-Truedens <- pseudoTrue$param$dens[[Trueclass]]
-
-TrueModel <- list(Trueclass = Trueclass,
-                TrueP = TrueP,
-                Ntrue =  Ntrue ,
-                TrueR =  TrueR ,
-                TrueJ =  TrueJ ,
-                TruePw = TruePw,
-                Truedens = Truedens)
-
-# save(file = "TrueModel.Rdat", TrueModel)
+#load("SVL_clean.Rdat")
+#Trueclass <- 15
+#pseudoTrue <- esT(n.class = 'fixed', to = Trueclass, X = tdat)
+#TrueP <- pseudoTrue$param$crP[[Trueclass]]
+#Ntrue <-  nrow(tdat) # N = 4211
+#TrueR <- pseudoTrue$param$R[[Trueclass]]
+#TrueJ <- ncol(TrueR) # 16
+#TruePw <- pseudoTrue$param$Pw[[Trueclass]]
+#Truedens <- pseudoTrue$param$dens[[Trueclass]]
+#
+#TrueModel <- list(Trueclass = Trueclass,
+#                TrueP = TrueP,
+#                Ntrue =  Ntrue ,
+#                TrueR =  TrueR ,
+#                TrueJ =  TrueJ ,
+#                TruePw = TruePw,
+#                Truedens = Truedens)
+#
+## save(file = "TrueModel.Rdat", TrueModel)
+load("TrueModel.Rdat")
 
 ## Generate data using poLCA
 Ns <- c(500, 1000, 5000, 10000)
@@ -48,7 +49,7 @@ simBIGdat <- replicate(Reps,
 simBIGdat
 # Time difference of 5.341289 mins
 # save(file = "simBIGdat.Rdat", simBIGdat) #3.2GB!
-#load("simBIGdat.Rdat")
+load("simBIGdat.Rdat")
 
 ## BIG SIMULATION !
 ## ! Time intense !
@@ -77,15 +78,19 @@ tblmodels10 <- tbldat %>%
                                        X = .-1)))
 (endt <- Sys.time() - startt)
 
-## For 5 Reps:
+## For 5 Reps, OLD Ns:
 # Time difference of 2.914978 hours
 # save(file = "tblmodels.Rdat", tblmodels)
 
-## For 10 Reps:
+## For 10 Reps, NEW Ns:
+tblmodels10b <- tblmodels10
+save(file = "tblmodels10b", tblmodels10b)
+
+## For 10 Reps, OLD Ns:
 # Time difference of 5.390989 hours
 #save(file = "tblmodels10.Rdat", tblmodels10)
   
-mem <- data.frame('object' = ls()) %>% 
+data.frame('object' = ls()) %>% 
   dplyr::mutate(size_unit = object %>%sapply(. %>% get() %>% object.size %>% format(., unit = 'auto')),
                 size = as.numeric(sapply(strsplit(size_unit, split = ' '), FUN = function(x) x[1])),
                 unit = factor(sapply(strsplit(size_unit, split = ' '), FUN = function(x) x[2]), levels = c('Gb', 'Mb', 'Kb', 'bytes'))) %>% 

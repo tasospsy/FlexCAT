@@ -63,7 +63,7 @@ pv <- function(Pw, prbs, L, R, print.patterns = FALSE){
 esT <-  function(X, 
                  n.class = c('fixed', 'explore'),
                  to ,
-                 by = c("aic", "bic", "aic3", "aicc", "caic"), 
+                 by = c("aic", "bic", "aic3", "aBIC", "caic"), 
                  Rep = 1,
                  maxiter = 5000){
   # from Andries:
@@ -86,7 +86,7 @@ esT <-  function(X,
     
     ## Extra IC
     tmp$aic3 <- (-2*.out$llik + 3 * .out$npar)
-    tmp$aicc <- .out$aic + (2 * .out$npar * (.out$npar + 1)) / (.out$N - .out$npar - 1)
+    tmp$aBIC <- (-2*.out$llik + .out$npar * log((.out$N +2)/24))
     
     # Out from 30/11 to save space
     #tmp$caic <- .out$bic - .out$npar
