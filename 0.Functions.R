@@ -11,7 +11,7 @@ load.or.install <- function(pkg){
 
 ## load required packages
 req_pckgs <- c("tidyverse", "haven", "poLCA", "patchwork", "furrr", "mokken")
-load.or.install(req_pckgs)
+
 
 ## ----------------------------
 ## A. FUNCTIONS for CALIBRATION
@@ -236,3 +236,4 @@ TidyEstFun <- function(t, class.to = 25) {
                                          X = .-1)))
   return(tblmod.)
 }
+

@@ -8,6 +8,7 @@ mydir <- "/Users/tasospsy/Google Drive/_UvA/Master Thesis/"
 setwd(mydir)
 
 ## 1. SVL 
+
 dat <- read_sav("SVL-i_Vlaanderen_TOT2_HV.sav")
 
 tdat  <-  dat %>% 

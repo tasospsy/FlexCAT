@@ -4,10 +4,6 @@
 ## c. 17.11.2021 / m. 31.12.2021
 
 
-## ------------
-### SIMULATIONS
-## ------------
-
 setwd("/Users/tasospsy/Google Drive/_UvA/Master Thesis/")
 
 ## LOAD THE DATASETS
@@ -132,6 +128,95 @@ save(file = "tblmod.91_100.Rdat", tblmod.91_100)
 # Time difference of 5.390989 hours
 #save(file = "tblmodels10.Rdat", tblmodels10)
 
+=======
+## Specify the true  model
+#load("SVL_clean.Rdat")
+#Trueclass <- 15
+#pseudoTrue <- esT(n.class = 'fixed', to = Trueclass, X = tdat)
+#TrueP <- pseudoTrue$param$crP[[Trueclass]]
+#Ntrue <-  nrow(tdat) # N = 4211
+#TrueR <- pseudoTrue$param$R[[Trueclass]]
+#TrueJ <- ncol(TrueR) # 16
+#TruePw <- pseudoTrue$param$Pw[[Trueclass]]
+#Truedens <- pseudoTrue$param$dens[[Trueclass]]
+#
+#TrueModel <- list(Trueclass = Trueclass,
+#                TrueP = TrueP,
+#                Ntrue =  Ntrue ,
+#                TrueR =  TrueR ,
+#                TrueJ =  TrueJ ,
+#                TruePw = TruePw,
+#                Truedens = Truedens)
+#
+## save(file = "TrueModel.Rdat", TrueModel)
+load("TrueModel.Rdat")
+
+## Generate data using poLCA
+Ns <- c(500, 1000, 5000, 10000)
+Reps <- 1000
+set.seed(1992)
+plan(multisession)
+startt <- Sys.time()
+simBIGdat <- replicate(Reps,
+                 future_map(Ns, ~ poLCA.simdata(N = ., 
+                                                probs = TrueModel$TrueP, 
+                                                nclass = TrueModel$Trueclass, 
+                                                ndv = TrueModel$TrueJ,
+                                                P = TrueModel$TruePw)$dat),
+                 simplify = FALSE)
+
+(endt <- Sys.time() - startt)
+simBIGdat
+# Time difference of 5.341289 mins
+# save(file = "simBIGdat.Rdat", simBIGdat) #3.2GB!
+load("simBIGdat.Rdat")
+
+## BIG SIMULATION !
+## ! Time intense !
+load("/Users/tasospsy/Google Drive/_UvA/Master Thesis/simBIGdat.Rdat")
+dat10 <- simBIGdat[1:10]
+## A tibble with the datasets and the N reps
+tbldat <- tibble(dat10) 
+tbldat <- tbldat %>% 
+  add_column(Rep = 1:nrow(tbldat), .before = 1) %>% 
+  rename('Dataset' = dat10) %>% 
+  unnest_longer(col = Dataset) 
+
+## Add column of Ns
+tbldat <- tbldat %>% 
+  add_column(N = unlist(imap(tbldat$Dataset, ~print(nrow(.x)))), .after = 1)
+
+## !! 10 Reps only
+## Estimate LCMs using the data from the simulations and add them as column 
+## next to the datasets. 
+plan(multisession, workers = 7)
+set.seed(1992)
+startt <- Sys.time()
+tblmodels10 <- tbldat %>% 
+  add_column(Model = future_imap(tbldat$Dataset, 
+                                 ~ esT(n.class = 'fixed', to = 25, 
+                                       X = .-1)))
+(endt <- Sys.time() - startt)
+
+## For 5 Reps, OLD Ns:
+# Time difference of 2.914978 hours
+# save(file = "tblmodels.Rdat", tblmodels)
+
+## For 10 Reps, NEW Ns:
+tblmodels10b <- tblmodels10
+save(file = "tblmodels10b", tblmodels10b)
+
+## For 10 Reps, OLD Ns:
+# Time difference of 5.390989 hours
+#save(file = "tblmodels10.Rdat", tblmodels10)
+  
+data.frame('object' = ls()) %>% 
+  dplyr::mutate(size_unit = object %>%sapply(. %>% get() %>% object.size %>% format(., unit = 'auto')),
+                size = as.numeric(sapply(strsplit(size_unit, split = ' '), FUN = function(x) x[1])),
+                unit = factor(sapply(strsplit(size_unit, split = ' '), FUN = function(x) x[2]), levels = c('Gb', 'Mb', 'Kb', 'bytes'))) %>% 
+  dplyr::arrange(unit, dplyr::desc(size)) %>% 
+  dplyr::select(-size_unit)
+>>>>>>> da4d731b97879387ca71fc1d7b8e2c078c388b8b
 ## ------------------------
 ## Small example for testing
 
@@ -176,5 +261,10 @@ smallRES <- future_map(smalldat, ~future_map(.,
 (endt <- Sys.time() - startt)
 ## 20sec
 
+<<<<<<< HEAD
 
 
+=======
+
+
+>>>>>>> da4d731b97879387ca71fc1d7b8e2c078c388b8b
