@@ -1,3 +1,4 @@
+
 plot.fun <- function(d, show.true.in = NULL){
   plotICs <- d %>% 
     filter(resid.df >=0) %>% # if we have neg df 
@@ -34,3 +35,41 @@ plot.fun <- function(d, show.true.in = NULL){
   return(plotICs)
 }
 plot.fun(out.fix02$table.stat)
+
+## FIRST PLOTTING
+## p.+ plot Fun
+p.plusplotFun <- function(dat) {
+  plot <- dat %>% 
+    unnest_longer(Total.D) %>% 
+    ggplot() +
+    geom_density(aes(x=Total.D, group = Rep, color = as.factor(classes)), alpha=.1)+ #, adjust = 0.5
+    facet_wrap(~ bestby + N) +
+    
+    ## Add the true model
+    geom_density(data = Truetbl %>% 
+                   unnest_longer(Total.D), 
+                 aes( x=Total.D, fill = 'True Model\n 15 classes'),size = .1, alpha = .2)+
+    theme_minimal()
+}
+
+allplotp.plus <- p.plusplotFun(all_by)
+allplotp.plus
+
+## p. plot Fun
+p.plotFun <- function(dat) {
+  plot <- dat %>% 
+    unnest_longer(Density) %>% 
+    ggplot() +
+    geom_density(aes(x=Density, group = Rep, color = as.factor(classes)), alpha=.1)+ #, adjust = 0.5
+    facet_wrap(~ bestby + N) +
+    
+    ## Add the true model
+    geom_density(data = Truetbl %>% 
+                   unnest_longer(Density), 
+                 aes( x=Density, fill = 'True Model\n 15 classes'),size = .1, alpha = .2)+
+    scale_x_continuous(trans="log10")+
+    theme_minimal()
+}
+
+allplotp. <- p.plotFun(all_by)
+allplotp.

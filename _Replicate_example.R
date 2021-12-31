@@ -14,7 +14,7 @@ prbs <- list(matrix(c(0.3,0.7,
 
 ## Convert the class condition probability matrices (prbs)
 ## from poLCA format to the format provided in van der Ark and Smits article.
-pA <- conPr(pR) 
+pA <- conPr(pR = prbs) 
 L <- 3 # number of items
 R <- Response.pat(L = L, isc = 1:2) # for item scores 1:2 
 Pw <- c(.2, .8)   # Class weights 

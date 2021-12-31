@@ -2,13 +2,23 @@
 ## (0) Functions
 ## Tasos Psychogyiopoulos
 
+## Load or Install packages Function 
+load.or.install <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[,1])]
+  if (length(new.pkg)) install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+## load required packages
+req_pckgs <- c("tidyverse", "haven", "poLCA", "patchwork", "furrr", "mokken")
+load.or.install(req_pckgs)
+
 ## ----------------------------
 ## A. FUNCTIONS for CALIBRATION
 ## ----------------------------
 ## Fun. A1
 ## Convert the class condition probability matrices (prbs)
 ## from poLCA format to the format provided in van der Ark and Smits article.
-pR <- prbs 
 conPr <- function(pR){
   nc <- nrow(pR[[1]]) # N classes
   t <- do.call(rbind,pR) # merge the lists
@@ -53,7 +63,7 @@ pv <- function(Pw, prbs, L, R, print.patterns = FALSE){
 esT <-  function(X, 
                  n.class = c('fixed', 'explore'),
                  to ,
-                 by = c("aic", "bic", "aic3", "aicc", "caic"), 
+                 by = c("aic", "bic", "aic3", "aBIC", "caic"), 
                  Rep = 1,
                  maxiter = 5000){
   # from Andries:
@@ -74,12 +84,16 @@ esT <-  function(X,
     tmp <- sapply(outputs, function(.) .out[[.]]) %>% t() %>%  as.data.frame 
     tmp$classes <- max(.out$predclass)
     
+    ## Extra IC
     tmp$aic3 <- (-2*.out$llik + 3 * .out$npar)
-    tmp$aicc <- .out$aic + (2 * .out$npar * (.out$npar + 1)) / (.out$N - .out$npar - 1)
-    tmp$caic <- .out$bic - .out$npar
-    tmp$`N/Npar` <- .out$N/.out$npar
-    tmp$Entropy <- .out %>% poLCA.entropy()
-    return(list(model = .out, summary = tmp))
+    tmp$aBIC <- (-2*.out$llik + .out$npar * log((.out$N +2)/24))
+    
+    # Out from 30/11 to save space
+    #tmp$caic <- .out$bic - .out$npar
+    #tmp$`N/Npar` <- .out$N/.out$npar
+    #tmp$Entropy <- .out %>% poLCA.entropy()
+    return(list( model = .out, 
+      summary = tmp))
   }
   if(n.class == 'fixed'){
     i <- 0L
@@ -93,8 +107,11 @@ esT <-  function(X,
       
       # 1. Store the table summary as list
       .sum[[i]] <- .t$summary 
+      
       # 2. Store the models output 
-      .model[[i]] <- .t$model
+      ##out from 30/11 to save space
+      #.model[[i]] <- .t$model
+      
       # 3. Store probabilities as lists
       .param$Pw[[i]] <- .t$model$P #P(x = c)
       .param$crP[[i]] <- .t$model$probs # P(yj = y| x= c)
@@ -116,7 +133,9 @@ esT <-  function(X,
     
     .sum <- do.call(rbind, .sum) # list to table
     
-    return(list(table.stat = .sum, model = .model, param = .param))
+    return(list(table.stat = .sum, 
+                #model = .model, 
+                param = .param))
   }
   if(n.class == 'explore'){
     i <- 0L
@@ -147,3 +166,73 @@ esT <-  function(X,
 ## ----------------------------
 ## FUNCTIONS FOR Starting Level
 ## ----------------------------
+## FlexCAT project
+## (2) LCA: Starting Level
+## Tasos Psychogyiopoulos
+
+## --------------
+## Starting Level
+## --------------
+## Fun. B1
+start.level <- function(R, density){
+  ## Total scores of the item score vector (?)
+  # R <- Response.pat(L = L, isc = 0:1) 
+  r.plus <- R %*% matrix(1, nrow = ncol(R)) # by Andries
+  ## All possible total scores x.plus
+  x.plus <- matrix(seq(0, ncol(R)), ncol = 1)
+  ## Q design matrix to relate p to px.+
+  Q <- matrix(NA, ncol = nrow(x.plus), nrow = nrow(r.plus))
+  for(i in 1:nrow(Q)){ # number of possible patterns
+    for(j in 1:ncol(Q)){ # number of possible total scores
+      ifelse(r.plus[i] == x.plus[j], Q[i,j] <- 1, Q[i,j] <- 0) # ?
+    }
+  }
+  ## TOTAL SCORE DENSITY! 
+  if(is.matrix(density)) px.plus <-  t(Q)%*%density 
+  if(is.numeric(density)) {
+    density <- matrix(density, ncol = 1)
+    px.plus <-  t(Q)%*%density 
+  }
+  return(list(r.plus = r.plus, x.plus = x.plus, Q = Q, px.plus = px.plus))
+}
+
+## ----------------------------
+## SPECIFY TRUE MODELS FUNCTION 
+## ----------------------------
+spTrueM <- function(tdat, N, J, C){
+  C <- C
+  pseudo <- esT(n.class = 'fixed', to = C, X = tdat)
+  P <- pseudo$param$crP[[C]]
+  N <- nrow(tdat)
+  R <- pseudo$param$R[[C]]
+  J <- ncol(R)
+  Pw <- pseudo$param$Pw[[C]]
+  dens <- pseudo$param$dens[[C]]
+  return(list(Class = C, P = P, N = N, R = R, J = J, Pw= Pw, dens = dens))
+}
+
+## ------------------------
+## TIDY - ESTIMATE FUNCTION
+## ------------------------
+TidyEstFun <- function(t, class.to = 25) {
+  ## A tibble with the datasets and the N reps
+  tbldat <- tibble(t) 
+  tbldat <- tbldat %>% 
+    add_column(Rep = 1:nrow(tbldat), .before = 1) %>% 
+    rename('Dataset' = t) %>% 
+    unnest_longer(col = Dataset) 
+  
+  ## Add column of Ns
+  tbldat <- tbldat %>% 
+    add_column(N = unlist(imap(tbldat$Dataset, ~print(nrow(.x)))), .after = 1)
+  
+  ## !! 10 Reps only
+  ## Estimate LCMs using the data from the simulations and add them as column 
+  ## next to the datasets. 
+  plan(multisession, workers = 7)
+  tblmod. <- tbldat %>% 
+    add_column(Model = future_imap(tbldat$Dataset, 
+                                   ~ esT(n.class = 'fixed', to = class.to, 
+                                         X = .-1)))
+  return(tblmod.)
+}
