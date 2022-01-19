@@ -7,6 +7,30 @@ load("simDat.Rdat")
 
 TR1dat <- simDat[[2]]
 
+## New chunks
+# We use the 'sliceL' function to subset the 'TR1dat' list into 
+# chunks to prevent for memory overload. 
+## It has length = 100, thus 5 chunks of 20 frames seems doable. 
+TR1dat.sliced <- sliceL(TR1dat, 5) 
+
+## With for_loop
+set.seed(1992)
+startt <- Sys.time()
+TR1.all.ch <- list()
+## Set progress bar
+pb <- txtProgressBar(min = 0, max = nrow(TR1dat.sliced),
+                     style = 3,width = 50, char = "=")   
+for (i in 1:nrow(TR1dat.sliced)){
+  TR1.all.ch[[i]]  <- invisible(TidyEstFun(TR1dat.sliced[[1]][[i]], class.to = 10))
+  save(file = "TR1.all.ch.Rdat", TR1.all.ch)
+  setTxtProgressBar(pb, i)
+}
+close(pb)
+(endt <- Sys.time() - startt)
+## Time difference of 49.62849 secs w/ for LOOP
+
+
+## Old chunks
 ## CHUNK 1 (1:20)
 set.seed(1992)
 startt <- Sys.time()

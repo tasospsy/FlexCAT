@@ -11,7 +11,7 @@ setwd("/Users/tasospsy/Google Drive/_UvA/Master Thesis/")
 # SVL 
 load("SVL_clean.Rdat")
 SVL <- tdat
-# transitive reasoning 1 
+# Transitive reasoning 1 
 load("TRANS1.Rdat")
 #J = 12; N = 425
 # Transitive Reasoning 2
@@ -58,9 +58,56 @@ for (i in 1:length(True)) {
 save(file = "simDat.Rdat", simDat) 
 
 
+##  --------------
+## DATA SIMULATION
+## ---------------
 
+## ------------------------------------
+## FOR TR1
+TR1dat <- simDat[[2]]
 
+# We use the 'sliceL' function to subset the 'TR1dat' list into 
+# chunks to prevent for memory overload. 
+## It has length = 100, thus 5 chunks of 20 frames seems doable. 
+TR1dat.sliced <- sliceL(TR1dat, 5) 
 
+## With for_loop
+set.seed(1992)
+startt <- Sys.time()
+TR1.all.ch <- list()
+## Set progress bar
+pb <- txtProgressBar(min = 0, max = nrow(TR1dat.sliced),
+                     style = 3,width = 50, char = "=")   
+for (i in 1:nrow(TR1dat.sliced)){
+  TR1.all.ch[[i]]  <- TidyEstFun(TR1dat.sliced[[1]][[i]], class.to = 10)
+  save(file = "TR1.all.ch.Rdat", TR1.all.ch)
+  setTxtProgressBar(pb, i)
+}
+close(pb)
+(endt <- Sys.time() - startt)
+## Time difference of 49.62849 secs w/ for LOOP
+
+## ------------------------------------
+## FOR TRANSITIVE REASONING 2
+TR2dat <- simDat[[3]]
+
+# We use the 'sliceL' function to subset the 'TR2dat' list into 
+# 5 chunks to prevent for memory overload. 
+## Its length is 100, thus 5 chunks of 20 frames seems doable. 
+TR2dat.sliced <- sliceL(TR2dat, 5) 
+
+## With for_loop
+set.seed(1992)
+startt <- Sys.time()
+TR2.all.ch <- list()
+## Set progress bar
+for (i in 1:nrow(TR1dat.sliced)){
+  TR2.all.ch[[i]]  <- TidyEstFun(TR2dat.sliced[[1]][[i]], class.to = 20)
+  save(file = "TR2.all.ch.Rdat", TR2.all.ch)
+  setTxtProgressBar(pb, i)
+}
+close(pb)
+(endt <- Sys.time() - startt)
 
 
 

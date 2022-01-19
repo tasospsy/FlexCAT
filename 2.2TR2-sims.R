@@ -2,6 +2,7 @@
 ## (2.2) Simulate - TR2
 ## Tasos Psychogyiopoulos
 ## c. 31.12.2021
+setwd("/Users/tasospsy/Google Drive/_UvA/Master Thesis/")
 
 load("simDat.Rdat")
 
@@ -14,7 +15,7 @@ TR2_ch_1  <- TidyEstFun(TR2dat[1:20], class.to = 20)
 save(file = "TR2_ch_1.Rdat", TR2_ch_1)
 rm(TR2_ch_1)
 (endt <- Sys.time() - startt)
-
+# Time difference of 3.882052 hours
 ## CHUNK 2/5 (21:40)
 set.seed(1992)
 TR2_ch_2  <- TidyEstFun(TR2dat[21:40], class.to = 20)

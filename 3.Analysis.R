@@ -82,8 +82,8 @@ startt <- Sys.time()
 fS_sq_31_40 <- analyZ(tblmod.31_40)
 (endt <- Sys.time() - startt)
 save(file = 'fS_sq_31_40.Rdat', fS_sq_31_40)
-
-
+finalS_11_30
+tblmodels111_30
 
 
 ## OLD CODE : 20.11.2021

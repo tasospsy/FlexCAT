@@ -11,7 +11,7 @@ load.or.install <- function(pkg){
 
 ## load required packages
 req_pckgs <- c("tidyverse", "haven", "poLCA", "patchwork", "furrr", "mokken")
-
+load.or.install(req_pckgs)
 
 ## ----------------------------
 ## A. FUNCTIONS for CALIBRATION
@@ -80,7 +80,7 @@ esT <-  function(X,
   
   .fi <- function(i){
     outputs <- c('N', 'resid.df', 'npar', 'llik', 'Gsq', 'aic', 'bic')
-    .out <- poLCA(f, X, nclass = i, nrep = Rep, maxiter = maxiter)
+    .out <- poLCA(f, X, nclass = i, nrep = Rep, maxiter = maxiter, verbose = FALSE)
     tmp <- sapply(outputs, function(.) .out[[.]]) %>% t() %>%  as.data.frame 
     tmp$classes <- max(.out$predclass)
     
@@ -214,7 +214,7 @@ spTrueM <- function(tdat, N, J, C){
 ## ------------------------
 ## TIDY - ESTIMATE FUNCTION
 ## ------------------------
-TidyEstFun <- function(t, class.to = 25) {
+TidyEstFun <- function(t, class.to = 25, mc = 7) {
   ## A tibble with the datasets and the N reps
   tbldat <- tibble(t) 
   tbldat <- tbldat %>% 
@@ -229,7 +229,7 @@ TidyEstFun <- function(t, class.to = 25) {
   ## !! 10 Reps only
   ## Estimate LCMs using the data from the simulations and add them as column 
   ## next to the datasets. 
-  plan(multisession, workers = 7)
+  plan(multisession, workers = mc)
   tblmod. <- tbldat %>% 
     add_column(Model = future_imap(tbldat$Dataset, 
                                    ~ esT(n.class = 'fixed', to = class.to, 
@@ -237,3 +237,13 @@ TidyEstFun <- function(t, class.to = 25) {
   return(tblmod.)
 }
 
+## --------------------------------------------
+## Function to subset a nested list into chunks
+## --------------------------------------------
+sliceL <- function(List, chunks){
+  Chunks <- list()
+  for(i in 1:chunks){
+    Chunks[[i]] <- List[seq(1, length(List), by = length(List)/chunks)[i]:seq(length(List)/chunks, length(List), by = length(List)/chunks)[i]]
+  }
+  return(tibble(Chunks))
+}
