@@ -1,12 +1,13 @@
 ## FlexCAT project
-## (0) Data Preparation
+## (OLD) Data Preparation
 ## Tasos Psychogyiopoulos
 ## c.05/10/2021/ m.31.12.2021
 
 
+
 mydir <- "/Users/tasospsy/Google Drive/_UvA/Master Thesis/"
 setwd(mydir)
-
+source("FlexCAT/0.Functions.R")
 ## 1. SVL 
 
 dat <- read_sav("SVL-i_Vlaanderen_TOT2_HV.sav")
