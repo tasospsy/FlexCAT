@@ -26,22 +26,23 @@ svl_160_dich <- dat %>%
 ## ---------------
 ## Specifying the true models 
 SVL <- svl_160_dich
-datas <- list(SVL1 = SVL[1:2], SVL2 = SVL[1:5])
+datas <- list(SVL1 = SVL[1:10], SVL2 = SVL[1:20])
 
-tKs <- c(2, 3, 4) # Conditions for true number of classes (K)
+tKs <- c(4, 8, 12) # Conditions for true number of classes (K)
 grid <- expand_grid(datas, tKs)
 plan(multisession)
 startmap <- Sys.time()
 true_mods <- future_map2(.x = grid$datas, .y = grid$tKs, 
-                         ~spTrueM(X = .x, C = .y))
+                         ~spTrueM(X = .x, C = .y)) %>% 
+  tibble() %>% unnest_wider(c(.)) %>% 
+  add_column(TrueMod = paste0('True.', 1:nrow(.)))
 endmap <- Sys.time()
 endmap - startmap
-# Time difference of 20.16773 mins
-
-true_mods  %<>%  tibble() %>% unnest_wider(c(.))
+# Time difference of 5.16773 mins
+save(true_mods, file = 'true_mods.Rdata')
 
 ## Generate data using poLCA
-Ns <- c(250, 500, 1000, 2000)
+Ns <- c(500, 1000, 2000, 5000)
 Reps <- 10
 set.seed(1992)
 
@@ -54,19 +55,16 @@ simdat <- true_mods %>% rowwise() %>%
                                             ndv = J,
                                             P = Pw)$dat),
                               simplify = FALSE)))) %>% 
-  dplyr::select(datalist) %>% # drop the true params
+  dplyr::select(datalist, TrueMod) %>% # drop the true params
   unnest(c(datalist)) %>% 
-  add_column(TrueMod = paste0('True.', 1:nrow(.))) %>% 
   unnest(datalist) %>% 
   group_by(TrueMod) %>% 
     mutate(Rep = paste(1:Reps)) %>%
     ungroup() %>% 
   mutate(datalist = imap(datalist, ~set_names(., as.character(Ns)))) %>% 
   unnest_wider(datalist) %>% 
-  pivot_longer(c(-TrueMod, -Rep), names_to = 'N', values_to = 'Dataset')
+  pivot_longer(c(-TrueMod, -Rep, -TrueMod), names_to = 'N', values_to = 'Dataset')
 
-mydir <- "/Users/tasospsy/Google Drive/_UvA/Master Thesis/"
-setwd(mydir)
-save(simdat, file = 'simdat.Rdat')
-
+save(simdat, file = 'simdat.Rdata')
+#load('simdat.Rdata')
 

@@ -39,7 +39,7 @@ Response.pat <- function(L, isc = 1:2) {
   R <- expand.grid(tmp)
   return(as.matrix(R))
 }
-test <- Response.pat(10)
+Response.pat(26)
 ## Fun. A3
 ## Function to compute the density of the item-score vectors (p)
 
@@ -64,8 +64,8 @@ pv <- function(Pw, prbs, L, R, print.patterns = FALSE) {
 ## Fun A4
 ## Main Estimation function
 esT <-  function(X,
-                 n.class = c('fixed', 'explore'),
-                 from = 0L,
+                 type = c('fixed', 'explore', 'given.true.class'),
+                 from,
                  to,
                  keep.last.only = FALSE,
                  by = c("aic", "bic", "aic3", "aBIC", "caic"),
@@ -90,7 +90,8 @@ esT <-  function(X,
   ))
   
   .fi <- function(i) {
-    outputs <- c('N', 'resid.df', 'npar', 'llik', 'Gsq', 'aic', 'bic')
+    outputs <- c('N', 'aic', 'bic', 'resid.df')
+    #outputs <- c(outputs, c('npar', 'llik', 'Gsq'))
     .out <-
       poLCA(
         f,
@@ -117,8 +118,8 @@ esT <-  function(X,
                 summary = tmp))
   }
   ## A.
-  ## n.class == 'fixed'
-  if (n.class == 'fixed') {
+  ## type == 'fixed'
+  if (type == 'fixed') {
     # update from 3/3/22
     if (keep.last.only) {
       i <- to - 1
@@ -146,7 +147,7 @@ esT <-  function(X,
       return(list(table.stat = .sum, param = .param))
       
     } else {
-      i <- from
+      i <- from 
       # three outputs: 1. summary table,
       # 2. model output from poLCA,
       # 3. probabilities from poLCA (slightly redundant)
@@ -191,11 +192,15 @@ esT <-  function(X,
                   param = .param))
     }
     
-  } # if n.class = 'fixed' end
+  } 
+  # update from 7/3/22
+  
+  
+  # if type = 'fixed' end
   
   ## B.
-  ## n.class == 'explore'Old solution from Andries ('bestK + 2')
-  if (n.class == 'explore') {
+  ## type == 'explore'Old solution from Andries ('bestK + 2')
+  if (type == 'explore') {
     i <- 0L
     fit <- bestfit <- 1e100
     sum <- list()
@@ -218,7 +223,8 @@ esT <-  function(X,
     bestModel$param$crP <- .t$model$probs# P(yj = y| x= c)
     bestModel$param$posP <- .t$model$posterior # P(x=c|vj = y)
     
-    return(list(table.stat = sum, best = bestModel))
+    return(list(table.stat = sum, best = bestModel, 
+                est.K = bestK))
   }
 }
 
@@ -268,7 +274,10 @@ start.level <- function(R, density) {
 ## ----------------------------
 spTrueM <- function(X, C) {
   C <- C
-  pseudo <- esT(n.class = 'fixed', to = C, X = X, keep.last.only = TRUE)
+  pseudo <- esT(type = 'fixed', 
+                to = C, 
+                X = X, 
+                keep.last.only = TRUE)
   P <- pseudo$param$crP
   N <- nrow(X)
   R <- pseudo$param$R
@@ -287,35 +296,35 @@ spTrueM <- function(X, C) {
 }
 
 ## ------------------------
-## TIDY - ESTIMATE FUNCTION
+## TIDY - ESTIMATE FUNCTION  ### REMOVED from 3/3/2022
 ## ------------------------
-TidyEstFun <- function(t, class.to = 25, mc = 7) {
-  ## A tibble with the datasets and the N reps
-  tbldat <- tibble(t)
-  tbldat <- tbldat %>%
-    add_column(Rep = 1:nrow(tbldat), .before = 1) %>%
-    rename('Dataset' = t) %>%
-    unnest_longer(col = Dataset)
-  
-  ## Add column of Ns
-  tbldat <- tbldat %>%
-    add_column(N = unlist(imap(tbldat$Dataset, ~ print(nrow(
-      .x
-    )))), .after = 1)
-  
-  ## !! 10 Reps only
-  ## Estimate LCMs using the data from the simulations and add them as column
-  ## next to the datasets.
-  plan(multisession, workers = mc)
-  tblmod. <- tbldat %>%
-    add_column(Model = future_imap(tbldat$Dataset,
-                                   ~ esT(
-                                     n.class = 'fixed',
-                                     to = class.to,
-                                     X = . - 1
-                                   )))
-  return(tblmod.)
-}
+# TidyEstFun <- function(t, class.to = 25, mc = 7) {
+#   ## A tibble with the datasets and the N reps
+#   tbldat <- tibble(t)
+#   tbldat <- tbldat %>%
+#     add_column(Rep = 1:nrow(tbldat), .before = 1) %>%
+#     rename('Dataset' = t) %>%
+#     unnest_longer(col = Dataset)
+#   
+#   ## Add column of Ns
+#   tbldat <- tbldat %>%
+#     add_column(N = unlist(imap(tbldat$Dataset, ~ print(nrow(
+#       .x
+#     )))), .after = 1)
+#   
+#   ## !! 10 Reps only
+#   ## Estimate LCMs using the data from the simulations and add them as column
+#   ## next to the datasets.
+#   plan(multisession, workers = mc)
+#   tblmod. <- tbldat %>%
+#     add_column(Model = future_imap(tbldat$Dataset,
+#                                    ~ esT(
+#                                      type = 'fixed',
+#                                      to = class.to,
+#                                      X = . - 1
+#                                    )))
+#   return(tblmod.)
+# }
 
 ## --------------------------------------------
 ## Function to subset a nested list into chunks
