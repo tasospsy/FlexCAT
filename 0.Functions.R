@@ -12,7 +12,7 @@ load.or.install <- function(pkg) {
 
 ## load required packages
 req_pckgs <-
-  c("tidyverse", "haven", "poLCA", "patchwork", "furrr", "mokken")
+  c("tidyverse", "haven", "poLCA", "patchwork", "furrr")
 load.or.install(req_pckgs)
 
 ## ----------------------------
@@ -39,7 +39,7 @@ Response.pat <- function(L, isc = 1:2) {
   R <- expand.grid(tmp)
   return(as.matrix(R))
 }
-Response.pat(26)
+Response.pat(25)
 ## Fun. A3
 ## Function to compute the density of the item-score vectors (p)
 
