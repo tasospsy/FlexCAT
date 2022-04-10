@@ -3,18 +3,25 @@
 ## Tasos Psychogyiopoulos
 ## c.03/03/2022/ m.6/4/2022
 
+## For Mac
 mydir <- "/Users/tasospsy/Google Drive/_UvA/Master Thesis/"
+
+## For VM - AWS
+mydir <- "/home/rstudio"
+
 setwd(mydir)
 source("FlexCAT/0.Functions.R")
-load("simdat.Rdata")
 
-load("simdatMED.Rdata")
-load("simdat_small.Rdata")
+load("simdat1k.Rdata")
+#load("simdat.Rdata")
+
+#load("simdatMED.Rdata")
+#load("simdat_small.Rdata")
 
 load("true_mods.Rdata")
-load("true_modsMED.Rdata")
+#load("true_modsMED.Rdata")
 
-truensimMED <- left_join(true_modsMED, simdatMED, by = 'TrueMod') %>% 
+truensim1k <- left_join(true_mods, simdat1k, by = 'TrueMod') %>% 
   dplyr::select(TrueMod, Rep, N.y, Dataset, Class)
 
 ## ----------------
@@ -22,10 +29,7 @@ truensimMED <- left_join(true_modsMED, simdatMED, by = 'TrueMod') %>%
 ## ----------------
 startt <- Sys.time()
 plan(multisession, gc = TRUE)
-esttest <- truensimMED %>% 
-  ## --- test
-  filter(Rep ==1, N.y ==500) %>% 
-  ## -- end test
+est1k <- truensim1k %>% 
   group_by(Class) %>% 
   mutate(est.Model = future_map2(Dataset,
                                  Class,
@@ -37,16 +41,11 @@ esttest <- truensimMED %>%
                                        ))) %>% 
   ungroup()
 
-## test
-esttest <- esttest %>% unnest_wider(est.Model) %>% 
-  unnest_longer(table.stat, names_repair = 'unique')  
-  
-esttest$table.stat$classes %>% unique()
-## end test
 endt <- Sys.time()
 endt - startt
-save(estMED, file = 'estMED.Rdata') # Time difference of 7.247467 hours
-load('estMED.Rdata')
+
+setwd("/home/rstudio/datatorun")
+save(est1k, file = 'est1k.Rdata') # Time difference of 7.247467 hours
 
 
 ## ------------------
