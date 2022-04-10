@@ -3,8 +3,12 @@
 ## Tasos Psychogyiopoulos
 ## c.02/03/2022
 
-
+## For Mac
 mydir <- "/Users/tasospsy/Google Drive/_UvA/Master Thesis/"
+
+## For VM - AWS
+mydir <- "/home/rstudio"
+
 setwd(mydir)
 source("FlexCAT/0.Functions.R")
 ## ----------------
@@ -12,6 +16,9 @@ source("FlexCAT/0.Functions.R")
 ## ----------------
 
 ## Select the categorical items that make them dichotomous
+## For VM - AWS
+mydir <- "/home/rstudio/datatorun/"
+setwd(mydir)
 dat <- read_sav("SVL-i_Vlaanderen_TOT2_HV.sav")
 
 svl_160_dich <- dat %>% 
@@ -26,7 +33,7 @@ svl_160_dich <- dat %>%
 ## ---------------
 ## Specifying the true models 
 SVL <- svl_160_dich
-datas <- list(SVL1 = SVL[1:10], SVL2 = SVL[1:20])
+datas <- list(SVL1 = SVL[1:7], SVL2 = SVL[1:15])
 
 tKs <- c(4, 8, 12) # Conditions for true number of classes (K)
 grid <- expand_grid(datas, tKs)
@@ -43,10 +50,10 @@ save(true_mods, file = 'true_mods.Rdata')
 
 ## Generate data using poLCA
 Ns <- c(500, 1000, 2000, 5000)
-Reps <- 10
+Reps <- 100
 set.seed(1992)
 
-simdat <- true_mods %>% rowwise() %>% 
+simdat1k <- true_mods %>% rowwise() %>% 
   mutate(datalist = list(list(replicate(Reps,
                                    map(Ns,
                                        ~poLCA.simdata(N = .,
@@ -65,6 +72,6 @@ simdat <- true_mods %>% rowwise() %>%
   unnest_wider(datalist) %>% 
   pivot_longer(c(-TrueMod, -Rep, -TrueMod), names_to = 'N', values_to = 'Dataset')
 
-save(simdat, file = 'simdat.Rdata')
+save(simdat1k, file = 'simdat1k.Rdata')
 #load('simdat.Rdata')
 
