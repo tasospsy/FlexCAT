@@ -1,4 +1,4 @@
-## FlexCAT project
+No## FlexCAT project
 ## (NEW) SVL - Model Estimation
 ## Tasos Psychogyiopoulos
 ## c.03/03/2022/ m.6/4/2022
@@ -12,13 +12,13 @@ mydir <- "/home/rstudio"
 setwd(mydir)
 source("FlexCAT/0.Functions.R")
 
-load("simdat1k.Rdata")
+load("datatorun/simdat1k.Rdata")
 #load("simdat.Rdata")
 
 #load("simdatMED.Rdata")
 #load("simdat_small.Rdata")
 
-load("true_mods.Rdata")
+load("datatorun/true_mods.Rdata")
 #load("true_modsMED.Rdata")
 
 truensim1k <- left_join(true_mods, simdat1k, by = 'TrueMod') %>% 
@@ -30,6 +30,8 @@ truensim1k <- left_join(true_mods, simdat1k, by = 'TrueMod') %>%
 startt <- Sys.time()
 plan(multisession, gc = TRUE)
 est1k <- truensim1k %>% 
+  mutate(Rep = as.numeric(Rep)) %>% 
+  filter(Rep <= 50) %>% 
   group_by(Class) %>% 
   mutate(est.Model = future_map2(Dataset,
                                  Class,

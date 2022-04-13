@@ -2,31 +2,36 @@
 ## 1st STEP Khat - K
 ## ------------------
 # 'fixed'
-esttest.rd <- esttest %>% unnest_wider(est.Model) %>% 
+esttd <- est1k %>% unnest_wider(est.Model) %>% 
   unnest_longer(table.stat, names_repair = 'unique') %>% 
-  esttest.rd <- esttest %>%  dplyr::select(TrueMod, Rep, N.y, Class, table.stat) %>% 
+  dplyr::select(TrueMod, Rep, N.y, Class, table.stat) %>% 
     group_by(Rep, TrueMod,  N.y, Class) %>% 
     summarize(byAIC = table.stat$classes[which.min(table.stat$aic)],
               byAIC3 = table.stat$classes[which.min(table.stat$aic3)],
               byBIC = table.stat$classes[which.min(table.stat$bic)],
               byaBIC = table.stat$classes[which.min(table.stat$aBIC)]) %>% 
     rowwise() %>% mutate_at(vars(starts_with("by")),  ~.x - Class) %>% 
-    left_join(true_modsMED , by = 'TrueMod') %>% 
+    left_join(true_mods , by = 'TrueMod') %>% 
     dplyr::select(-Class.y, -P, -N, -R, -Pw, -dens)%>% 
     rename_at(vars(starts_with('by')), ~str_remove(.x,'by')) %>% 
     rename('K' = 'Class.x', 'N' = 'N.y')
+
+setwd("/home/rstudio/datatorun")
+save(esttd,file ='esttd.Rdata')
+
+pertable <- esttd %>% 
+  pivot_longer(cols = c(AIC,AIC3,BIC,aBIC), 
+               names_to = 'IC', 
+               values_to = 'K.hat-K') %>% 
+  group_by(TrueMod, N, IC, K, J) %>% count(`K.hat-K`) %>% 
+  filter(`K.hat-K`==0) %>% dplyr::select(-`K.hat-K`) %>% 
+  mutate(per = n / 50 * 100) %>% dplyr::select(-n) %>% 
+  pivot_wider(names_from = 'IC', values_from = 'per') 
   
-  pertable <- est.tdS %>% 
-    pivot_longer(cols = c(AIC,AIC3,BIC,aBIC), 
-                 names_to = 'IC', 
-                 values_to = 'K.hat-K') %>% 
-    group_by(TrueMod, N, IC, K, J) %>% count(`K.hat-K`) %>% 
-    filter(`K.hat-K`==0) %>% dplyr::select(-`K.hat-K`) %>% 
-    mutate(per = n / 50 * 100) %>% dplyr::select(-n) %>% 
-    pivot_wider(names_from = 'IC', values_from = 'per') 
+setwd("/home/rstudio/datatorun")
+save(pertable,file ='pertable.Rdata')
   
-  
-  plotby <- est.tdS %>%
+  plotby <- esttd %>%
     pivot_longer(cols = c(AIC,AIC3,BIC,aBIC), 
                  names_to = 'IC', 
                  values_to = 'K.hat-K') %>% 
