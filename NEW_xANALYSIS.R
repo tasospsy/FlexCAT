@@ -11,11 +11,12 @@ load("est1k.Rdata")
 out1 <- est1k
 load("est1k2.Rdata")
 out2 <- est1k2
-rm(list = c(est1k, est1k2))
-
+rm(est1k2)
+rm(est1k)
 # Merge them
 out <- bind_rows(out1, out2)
-
+rm(out1)
+rm(out2)
 ## TIDY PART
 out.td <- out %>% unnest_wider(est.Model) %>% 
   unnest_longer(table.stat, names_repair = 'unique') %>% 
@@ -95,15 +96,27 @@ theme1 <- theme(plot.background = element_rect(fill = "white", color = NA), #bac
 
 library(philentropy)
 
-out2.td <- test1 %>% unnest_wider(est.Model) %>% 
+out2.td <- out %>% unnest_wider(est.Model) %>% 
   left_join(true_mods , by = 'TrueMod') %>%
   unnest(table.stat, names_repair = 'unique') %>% 
   dplyr::select(TrueMod, Rep, N.y, J, Class.x, classes, param, dens) %>%
   unnest_wider(param, names_repair = 'unique') %>% 
-  dplyr::select(-Pw, -crP, -posP, -pA, -R) %>% 
+  dplyr::select(-Pw, -crP, -posP, -pA, R) %>% 
   rename('K' = 'Class.x', 'N' = 'N.y', 'est.dens' = 'dens...12',
-         'true.dens' ='dens...13', est.K = 'classes')  
-out2.td
+         'true.dens' ='dens...13', est.K = 'classes') %>% 
+  ## NEW SOLVE!!
+  rowwise() %>% 
+  mutate(est.dens = list(est.dens[[est.K]]),
+         R = list(R[[est.K]])
+  )
+## Add density of sum scores (dens.ss)
+out2.td <- out2.td %>%
+  filter(TrueMod == 'True.1', N == 500) %>% 
+  rowwise() %>% 
+  mutate(dens.ss = list(start.level(density = est.dens, R = R-1)$px.plus))
+
+
+
 
 est2.tdMED <- est2.tdMED %>%
   add_column(KL.ds.p = map2(.x = .$est.dens,
