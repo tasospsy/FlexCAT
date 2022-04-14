@@ -173,10 +173,10 @@ esT <-  function(X,
         .param$R[[i]] <-
           Response.pat(L = J, isc = 1:2) # see tasos' Fun.2
         .param$dens[[i]] <- pv(
-          Pw = .param$Pw[[i]],
+          Pw = .param$Pw,
           L = J,
-          R = .param$R[[i]],
-          prbs = .param$pA[[i]],
+          R = .param$R,
+          prbs = .param$pA,
           print.patterns = FALSE
         ) # see tasos' Fun.3
         
