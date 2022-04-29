@@ -2,21 +2,24 @@
 ## 1st STEP Khat - K
 ## ------------------
 # 'fixed'
-esttest.rd <- esttest %>% unnest_wider(est.Model) %>% 
+setwd("/Users/tasospsy/Google Drive/_UvA/Master Thesis")
+load("data/est1k1.Rdata")
+load("true_mods.Rdata")
+
+est1k1.rd <- est1k[[1]] %>% unnest_wider(est.Model) %>% 
   unnest_longer(table.stat, names_repair = 'unique') %>% 
-  esttest.rd <- esttest %>%  dplyr::select(TrueMod, Rep, N.y, Class, table.stat) %>% 
     group_by(Rep, TrueMod,  N.y, Class) %>% 
     summarize(byAIC = table.stat$classes[which.min(table.stat$aic)],
               byAIC3 = table.stat$classes[which.min(table.stat$aic3)],
               byBIC = table.stat$classes[which.min(table.stat$bic)],
               byaBIC = table.stat$classes[which.min(table.stat$aBIC)]) %>% 
     rowwise() %>% mutate_at(vars(starts_with("by")),  ~.x - Class) %>% 
-    left_join(true_modsMED , by = 'TrueMod') %>% 
+    left_join(true_mods , by = 'TrueMod') %>% 
     dplyr::select(-Class.y, -P, -N, -R, -Pw, -dens)%>% 
     rename_at(vars(starts_with('by')), ~str_remove(.x,'by')) %>% 
     rename('K' = 'Class.x', 'N' = 'N.y')
   
-  pertable <- est.tdS %>% 
+  pertable <- est1k1.rd %>% 
     pivot_longer(cols = c(AIC,AIC3,BIC,aBIC), 
                  names_to = 'IC', 
                  values_to = 'K.hat-K') %>% 
@@ -26,7 +29,7 @@ esttest.rd <- esttest %>% unnest_wider(est.Model) %>%
     pivot_wider(names_from = 'IC', values_from = 'per') 
   
   
-  plotby <- est.tdS %>%
+  plotby <- est1k1.rd %>%
     pivot_longer(cols = c(AIC,AIC3,BIC,aBIC), 
                  names_to = 'IC', 
                  values_to = 'K.hat-K') %>% 
