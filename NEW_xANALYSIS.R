@@ -41,7 +41,7 @@ pertable <- out.td %>%
                values_to = 'K.hat-K') %>% 
   group_by(TrueMod, N, IC, K, J) %>% count(`K.hat-K`) %>% 
   filter(`K.hat-K`==0) %>% dplyr::select(-`K.hat-K`) %>% 
-  mutate(per = n / 50 * 100) %>% dplyr::select(-n) %>% 
+  mutate(per = n / 100 * 100) %>% dplyr::select(-n) %>% 
   pivot_wider(names_from = 'IC', values_from = 'per') 
   
 save(pertable,file ='pertable.Rdata')
@@ -93,8 +93,11 @@ theme1 <- theme(plot.background = element_rect(fill = "white", color = NA), #bac
 ## ------------------
 ## 2nd STEP p Vs phat
 ## ------------------
-
 library(philentropy)
+## Add density of sum scores (dens.ss) in TRUE MODELS
+true_mods <- true_mods %>% 
+  rowwise() %>%
+  mutate(true.dens.ss = list(start.level(density = dens, R = R-1)$px.plus))
 
 out2.td <- out %>% unnest_wider(est.Model) %>% 
   left_join(true_mods , by = 'TrueMod') %>%
@@ -107,18 +110,35 @@ out2.td <- out %>% unnest_wider(est.Model) %>%
   ## NEW SOLVE!!
   rowwise() %>% 
   mutate(est.dens = list(est.dens[[est.K]]),
-         R = list(R[[est.K]])
-  )
-## Add density of sum scores (dens.ss)
-out2.td <- out2.td %>%
-  filter(TrueMod == 'True.1', N == 500) %>% 
+         R = list(R[[est.K]])) 
+
+testKL <- out2.td %>% 
   rowwise() %>% 
-  mutate(dens.ss = list(start.level(density = est.dens, R = R-1)$px.plus))
+  mutate(KL.p = kullback_leibler_distance(P = est.dens, # P
+                                          Q = true.dens, #Q
+                                          testNA = FALSE, unit ="log", 
+                                          epsilon = 0.000000001)) %>% 
+  dplyr::select(-R, -true.dens, -est.dens)
+    
+setwd("/home/rstudio/efs")
+save(testKL,file ='testKL.Rdata')
+
+## --- UNDER CON
+
+
+## I cannot COMPUTE THE P+ OF THE BIG MODELS!!
+## Add density of sum scores (dens.ss) in estimated models
+test <- out2.td %>%
+  #filter(TrueMod == 'True.4') %>% 
+  rowwise() %>% 
+  mutate(est.dens.ss = list(start.level(density = est.dens, R = R-1)$px.plus)) %>% 
+  left_join(true_mods %>% dplyr::select(TrueMod, true.dens.ss) , by = 'TrueMod') 
 
 
 
-
-est2.tdMED <- est2.tdMED %>%
+## not working
+test <- out2.td %>%
+  filter(TrueMod == 'True.1', N == 500) %>% 
   add_column(KL.ds.p = map2(.x = .$est.dens,
                             .y = .$true.dens,
                             ~kullback_leibler_distance(.y, # P
