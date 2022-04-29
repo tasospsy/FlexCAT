@@ -1,15 +1,6 @@
 ## ------------------
 ## 1st STEP Khat - K
 ## ------------------
-<<<<<<< HEAD
-# 'fixed'
-setwd("/Users/tasospsy/Google Drive/_UvA/Master Thesis")
-load("data/est1k1.Rdata")
-load("true_mods.Rdata")
-
-est1k1.rd <- est1k[[1]] %>% unnest_wider(est.Model) %>% 
-  unnest_longer(table.stat, names_repair = 'unique') %>% 
-=======
 
 setwd("/home/rstudio")
 source("FlexCAT/0.Functions.R")
@@ -30,17 +21,16 @@ rm(out2)
 out.td <- out %>% unnest_wider(est.Model) %>% 
   unnest_longer(table.stat, names_repair = 'unique') %>% 
   dplyr::select(TrueMod, Rep, N.y, Class, table.stat) %>% 
->>>>>>> 5f4a87d58b9fdc67ceb1e26ff9b8c1dd47a6223a
-    group_by(Rep, TrueMod,  N.y, Class) %>% 
-    summarize(byAIC = table.stat$classes[which.min(table.stat$aic)],
-              byAIC3 = table.stat$classes[which.min(table.stat$aic3)],
-              byBIC = table.stat$classes[which.min(table.stat$bic)],
-              byaBIC = table.stat$classes[which.min(table.stat$aBIC)]) %>% 
-    rowwise() %>% mutate_at(vars(starts_with("by")),  ~.x - Class) %>% 
-    left_join(true_mods , by = 'TrueMod') %>% 
-    dplyr::select(-Class.y, -P, -N, -R, -Pw, -dens)%>% 
-    rename_at(vars(starts_with('by')), ~str_remove(.x,'by')) %>% 
-    rename('K' = 'Class.x', 'N' = 'N.y')
+  group_by(Rep, TrueMod,  N.y, Class) %>% 
+  summarize(byAIC = table.stat$classes[which.min(table.stat$aic)],
+            byAIC3 = table.stat$classes[which.min(table.stat$aic3)],
+            byBIC = table.stat$classes[which.min(table.stat$bic)],
+            byaBIC = table.stat$classes[which.min(table.stat$aBIC)]) %>% 
+  rowwise() %>% mutate_at(vars(starts_with("by")),  ~.x - Class) %>% 
+  left_join(true_mods , by = 'TrueMod') %>% 
+  dplyr::select(-Class.y, -P, -N, -R, -Pw, -dens)%>% 
+  rename_at(vars(starts_with('by')), ~str_remove(.x,'by')) %>% 
+  rename('K' = 'Class.x', 'N' = 'N.y')
 
 setwd("/home/rstudio/efs")
 save(out.td,file ='out-td.Rdata')
@@ -53,48 +43,9 @@ pertable <- out.td %>%
   filter(`K.hat-K`==0) %>% dplyr::select(-`K.hat-K`) %>% 
   mutate(per = n / 100 * 100) %>% dplyr::select(-n) %>% 
   pivot_wider(names_from = 'IC', values_from = 'per') 
-  
-<<<<<<< HEAD
-  pertable <- est1k1.rd %>% 
-    pivot_longer(cols = c(AIC,AIC3,BIC,aBIC), 
-                 names_to = 'IC', 
-                 values_to = 'K.hat-K') %>% 
-    group_by(TrueMod, N, IC, K, J) %>% count(`K.hat-K`) %>% 
-    filter(`K.hat-K`==0) %>% dplyr::select(-`K.hat-K`) %>% 
-    mutate(per = n / 50 * 100) %>% dplyr::select(-n) %>% 
-    pivot_wider(names_from = 'IC', values_from = 'per') 
-  
-  
-  plotby <- est1k1.rd %>%
-    pivot_longer(cols = c(AIC,AIC3,BIC,aBIC), 
-                 names_to = 'IC', 
-                 values_to = 'K.hat-K') %>% 
-    mutate(J = case_when(J== 7 ~ 'J = 7',
-                         J== 15 ~ 'J = 15'),
-           K = case_when(K == 4 ~  'K = 4',
-                         K == 8 ~  'K = 8',
-                         K == 12 ~ 'K = 12')) %>% 
-    ggplot() +
-    geom_boxplot(aes(y = `K.hat-K`, 
-                     x= reorder(IC, -`K.hat-K`), color = IC),
-                 outlier.size = .5)+
-    geom_hline(yintercept=0, linetype="dashed", 
-               color = "grey50", size=.2)+
-    facet_grid(fct_relevel(N,'500','1000','2000', '5000') ~ 
-                 fct_relevel(J, 'J = 7', 'J = 15') +
-                 fct_relevel(K, 'K = 4', 'K = 8', 'K = 12')) +
-    xlab("") + 
-    ylab(expression( hat(K) - trueK )) +
-    labs(title = 'Distribution of the outcome variable over the conditions')+
-    theme_bw() +   
-    theme1 
-  plotby
-  
-  
-  theme1 <- theme(plot.background = element_rect(fill = "white", color = NA), #background color
-=======
+
 save(pertable,file ='pertable.Rdata')
-  
+
 plotby <- out.td %>%
   pivot_longer(cols = c(AIC,AIC3,BIC,aBIC), 
                names_to = 'IC', 
@@ -124,21 +75,20 @@ plotby
 
 
 theme1 <- theme(plot.background = element_rect(fill = "white", color = NA), #background color
->>>>>>> 5f4a87d58b9fdc67ceb1e26ff9b8c1dd47a6223a
-                  text = element_text(family = "mono", color = "black"), # color of all text in the plot 
-                  plot.title = element_text(hjust = 0.5, color = "black", size = 11), # specs of the title
-                  strip.text = element_text(colour = "black", size = 14), # specs of the text inside plot
-                  panel.grid.major.x = element_line(size = .5), # change the grid layout
-                  panel.grid.major.y = element_line(size = .5), # change the grid layout
-                  panel.grid.minor.x = element_blank(), # remove the grid layout
-                  panel.grid.minor.y = element_blank(), # remove the grid layout
-                  axis.text=element_text(size=11, color = "black"), # specs of the text in axis
-                  axis.text.x = element_blank(),
-                  legend.position = "bottom", # legend down
-                  #legend.title = element_blank(), # remove legend title,
-                  legend.text = element_text(colour = "black", size = 9)
-  )
-  
+                text = element_text(family = "mono", color = "black"), # color of all text in the plot 
+                plot.title = element_text(hjust = 0.5, color = "black", size = 11), # specs of the title
+                strip.text = element_text(colour = "black", size = 14), # specs of the text inside plot
+                panel.grid.major.x = element_line(size = .5), # change the grid layout
+                panel.grid.major.y = element_line(size = .5), # change the grid layout
+                panel.grid.minor.x = element_blank(), # remove the grid layout
+                panel.grid.minor.y = element_blank(), # remove the grid layout
+                axis.text=element_text(size=11, color = "black"), # specs of the text in axis
+                axis.text.x = element_blank(),
+                legend.position = "bottom", # legend down
+                #legend.title = element_blank(), # remove legend title,
+                legend.text = element_text(colour = "black", size = 9)
+)
+
 
 ## ------------------
 ## 2nd STEP p Vs phat
@@ -169,7 +119,7 @@ testKL <- out2.td %>%
                                           testNA = FALSE, unit ="log", 
                                           epsilon = 0.000000001)) %>% 
   dplyr::select(-R, -true.dens, -est.dens)
-    
+
 setwd("/home/rstudio/efs")
 save(testKL,file ='testKL.Rdata')
 
@@ -194,4 +144,3 @@ test <- out2.td %>%
                             ~kullback_leibler_distance(.y, # P
                                                        .x, #Q
                                                        testNA = FALSE, unit ="log"))) 
-
