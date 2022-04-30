@@ -97,11 +97,16 @@ theme1 <- theme(plot.background = element_rect(fill = "white", color = NA), #bac
 ## ------------------
 ## 2nd STEP p Vs pha
 ## ------------------
+
 library(philentropy)
 ## Add density of sum scores (dens.ss) in TRUE MODELS
 true_mods <- true_mods %>% 
   rowwise() %>%
   mutate(true.dens.ss = list(start.level(density = dens, R = R-1)$px.plus))
+
+# 30/4/2022
+setwd("/home/rstudio/efs")
+save(true_mods,file ='true_mods.Rdata')
 
 out2.td <- out %>% unnest_wider(est.Model) %>% 
   left_join(true_mods , by = 'TrueMod') %>%
@@ -111,10 +116,12 @@ out2.td <- out %>% unnest_wider(est.Model) %>%
   dplyr::select(-Pw, -crP, -posP, -pA, R) %>% 
   rename('K' = 'Class.x', 'N' = 'N.y', 'est.dens' = 'dens...12',
          'true.dens' ='dens...13', est.K = 'classes') %>% 
-  ## NEW SOLVE!!
-  rowwise() %>% 
-  mutate(est.dens = list(est.dens[[est.K]]),
-         R = list(R[[est.K]])) 
+  mutate(est.dens = map2(.x = est.dens, .y = est.K, ~ .x[[.y]]),
+         R = map2(.x = R, .y = est.K, ~ .x[[.y]]))
+
+# 30/4/2022
+setwd("/home/rstudio/efs")
+save(out2.td,file ='out2.td.Rdata')
 
 testKL <- out2.td %>% 
   rowwise() %>% 
@@ -127,7 +134,7 @@ testKL <- out2.td %>%
 #setwd("/home/rstudio/efs")
 #save(testKL,file ='testKL.Rdata')
 
-## which is the maximum percentage of etsimeted K that is 
+## which is the maximum percentage of estimated K that is 
 ## picked by each IC, within each condition of the 24?
 perc.ICs.K <- out.td %>% 
   rowwise() %>% mutate_at(vars(AIC,AIC3,BIC,aBIC),  ~.x + K)  %>% 
@@ -200,24 +207,19 @@ testKL %>%
         #legend.position = 'none'
         )
 
-## --- UNDER CON
+## --- IN PROGRESS
 
-
-## I cannot COMPUTE THE P+ OF THE BIG MODELS!!
-## Add density of sum scores (dens.ss) in estimated models
+## Add density of sum scores P+  (dens.ss) in estimated models
+startt <- Sys.time()
+plan(multisession, gc = TRUE)
 test <- out2.td %>%
-  #filter(TrueMod == 'True.4') %>% 
-  rowwise() %>% 
-  mutate(est.dens.ss = list(start.level(density = est.dens, R = R-1)$px.plus)) %>% 
+  filter(Rep == 1) %>% 
+  mutate(est.dens.ss = future_map2(.x = est.dens, .y = R, 
+                                 ~start.level(density = .x, R = .y)$px.plus))
+endt <- Sys.time()
+endt-startt
+
+#%>% 
   left_join(true_mods %>% dplyr::select(TrueMod, true.dens.ss) , by = 'TrueMod') 
 
 
-
-## not working
-test <- out2.td %>%
-  filter(TrueMod == 'True.1', N == 500) %>% 
-  add_column(KL.ds.p = map2(.x = .$est.dens,
-                            .y = .$true.dens,
-                            ~kullback_leibler_distance(.y, # P
-                                                       .x, #Q
-                                                       testNA = FALSE, unit ="log"))) 
