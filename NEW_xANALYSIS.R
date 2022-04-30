@@ -11,6 +11,7 @@ source("FlexCAT/0.Functions.R")
 ## Load files output from EFS
 setwd("/home/rstudio/efs")
 load("true_mods.Rdata")
+load('out2.td.Rdata')
 load("est1k.Rdata")
 out1 <- est1k
 load("est1k2.Rdata")
@@ -108,6 +109,7 @@ true_mods <- true_mods %>%
 setwd("/home/rstudio/efs")
 save(true_mods,file ='true_mods.Rdata')
 
+## TIME INTESIVE ~ 5 HRS!!
 out2.td <- out %>% unnest_wider(est.Model) %>% 
   left_join(true_mods , by = 'TrueMod') %>%
   unnest(table.stat, names_repair = 'unique') %>% 
@@ -116,23 +118,40 @@ out2.td <- out %>% unnest_wider(est.Model) %>%
   dplyr::select(-Pw, -crP, -posP, -pA, R) %>% 
   rename('K' = 'Class.x', 'N' = 'N.y', 'est.dens' = 'dens...12',
          'true.dens' ='dens...13', est.K = 'classes') %>% 
+  # select the right vector of the list (list[[est.K]])
   mutate(est.dens = map2(.x = est.dens, .y = est.K, ~ .x[[.y]]),
-         R = map2(.x = R, .y = est.K, ~ .x[[.y]]))
+         R = map2(.x = R, .y = est.K, ~ .x[[.y]])) %>% 
+  # calculate P+
+  mutate(est.dens.ss = map2(.x = est.dens, .y = R, 
+                            ~start.level(density = .x, R = .y)$px.plus)) %>% 
+  # join true P+
+  left_join(true_mods %>% dplyr::select(TrueMod, true.dens.ss) , by = 'TrueMod')
 
 # 30/4/2022
 setwd("/home/rstudio/efs")
 save(out2.td,file ='out2.td.Rdata')
 
-testKL <- out2.td %>% 
-  rowwise() %>% 
-  mutate(KL.p = kullback_leibler_distance(P = est.dens, # P
-                                          Q = true.dens, #Q
-                                          testNA = FALSE, unit ="log", 
-                                          epsilon = 0.000000001)) %>% 
-  dplyr::select(-R, -true.dens, -est.dens)
+## Compute KL distances and remove the densities
+KL2 <- out2.td %>% 
+  mutate(KL.Pp = unlist(map2(.x =est.dens.ss, 
+                      .y = true.dens.ss,
+                      ~kullback_leibler_distance(P = .x, # P
+                                                 Q = .y, #Q
+                                                 testNA = FALSE, unit ="log", 
+                                                 epsilon = 0.000000001)))) %>%
+  mutate(KL.P = unlist(map2(.x =est.dens, 
+                     .y =true.dens,
+                     ~kullback_leibler_distance(P = .x, # P
+                                                Q = .y, #Q
+                                                testNA = FALSE, unit ="log", 
+                                                epsilon = 0.000000001)))) %>%        
+  dplyr::select(-R, -true.dens, -est.dens, -est.dens.ss, -true.dens.ss)
 
-#setwd("/home/rstudio/efs")
-#save(testKL,file ='testKL.Rdata')
+save(KL2,file ='KL2.Rdata')
+
+##=====================
+## VISUALIZATION
+##=====================
 
 ## which is the maximum percentage of estimated K that is 
 ## picked by each IC, within each condition of the 24?
@@ -166,7 +185,7 @@ perc.ICs.K.LONG <- perc.ICs.K %>%
                           IC == 'aBIC' ~ .3))
 ## PLOT KL smooth spline per condition 
 ## ?? (WITH percentage of ICs)
-testKL %>% 
+KL2 %>% 
   mutate(J = case_when(J== 7 ~ 'J = 7',
                        J== 15 ~ 'J = 15'),
          K = case_when(K == 4 ~  'K = 4',
@@ -174,12 +193,15 @@ testKL %>%
                        K == 12 ~ 'K = 12')) %>%
   mutate(t.K = as.integer(stringr::str_extract(K, "\\d+"))) %>% 
   ggplot() +
-  geom_point(aes(x = est.K, y = KL.p), size = .8, color = 'lightblue') +
-  geom_smooth(aes(x = est.K, y = KL.p), method = 'loess', 
-              color = 'grey5', size = 1) +
+  geom_point(aes(x = est.K, y = KL.P), size = .8, color = 'lightblue') +
+  geom_smooth(aes(x = est.K, y = KL.P), method = 'loess', 
+              color = 'darkblue', size = 1) +
   geom_vline(aes(xintercept= t.K), linetype="dotted", 
-                        color = "black", size=.4)+
+             color = "black", size=.4) +
   
+  geom_point(aes(x = est.K, y = KL.Pp), size = .8, color = 'pink') +
+  geom_smooth(aes(x = est.K, y = KL.Pp), method = 'loess', 
+              color = 'darkred', size = 1) +
   ## ICs part
   #geom_label(data = perc.ICs.K.LONG,
   #  aes(x = est.K, y = IC.y,
@@ -190,9 +212,8 @@ testKL %>%
   #  #fill="lightgreen", 
   #  alpha = .9, 
   #  hjust = 0) +
-  geom_vline(
-    data = perc.ICs.K.LONG, 
-      aes(xintercept= est.K, color = IC), size=1, alpha = .5, linetype = 'solid') +
+  geom_vline(data = perc.ICs.K.LONG,
+             mapping = aes(xintercept= est.K, color = IC), size=1, alpha = .5, linetype = 'solid') +
   
   ## 
   facet_grid(fct_relevel(N,'500','1000','2000', '5000') ~ 
@@ -201,25 +222,12 @@ testKL %>%
              scales = 'free_x') + 
   labs(title = "",
        x = "Number of estimated classes",
-       y = "Kullbach - Leibler distance (π - est. π)") +
+       y = "Kullbach - Leibler distance") +
   theme_bw() + theme1 +
   theme(axis.text.x = element_text(size=11, color = "black"), 
         #legend.position = 'none'
         )
 
 ## --- IN PROGRESS
-
-## Add density of sum scores P+  (dens.ss) in estimated models
-startt <- Sys.time()
-plan(multisession, gc = TRUE)
-test <- out2.td %>%
-  filter(Rep == 1) %>% 
-  mutate(est.dens.ss = future_map2(.x = est.dens, .y = R, 
-                                 ~start.level(density = .x, R = .y)$px.plus))
-endt <- Sys.time()
-endt-startt
-
-#%>% 
-  left_join(true_mods %>% dplyr::select(TrueMod, true.dens.ss) , by = 'TrueMod') 
 
 
