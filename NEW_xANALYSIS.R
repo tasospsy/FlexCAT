@@ -11,11 +11,7 @@ source("FlexCAT/0.Functions.R")
 ## Load files output from EFS
 setwd("/home/rstudio/efs")
 load("true_mods.Rdata")
-<<<<<<< HEAD
 load('out2.td.Rdata')
-=======
-load("out2.td.Rdata")
->>>>>>> b849a218f6c30a27effed205cbde431ae294b592
 load("est1k.Rdata")
 out1 <- est1k
 load("est1k2.Rdata")
@@ -138,17 +134,17 @@ save(out2.td,file ='out2.td.Rdata')
 ## Compute KL distances and remove the densities
 KL2 <- out2.td %>% 
   mutate(KL.Pp = unlist(map2(.x =est.dens.ss, 
-                      .y = true.dens.ss,
-                      ~kullback_leibler_distance(P = .x, # P
-                                                 Q = .y, #Q
-                                                 testNA = FALSE, unit ="log", 
-                                                 epsilon = 0.000000001)))) %>%
+                             .y = true.dens.ss,
+                             ~kullback_leibler_distance(P = .x, # P
+                                                        Q = .y, #Q
+                                                        testNA = FALSE, unit ="log", 
+                                                        epsilon = 0.000000001)))) %>%
   mutate(KL.P = unlist(map2(.x =est.dens, 
-                     .y =true.dens,
-                     ~kullback_leibler_distance(P = .x, # P
-                                                Q = .y, #Q
-                                                testNA = FALSE, unit ="log", 
-                                                epsilon = 0.000000001)))) %>%        
+                            .y =true.dens,
+                            ~kullback_leibler_distance(P = .x, # P
+                                                       Q = .y, #Q
+                                                       testNA = FALSE, unit ="log", 
+                                                       epsilon = 0.000000001)))) %>%        
   dplyr::select(-R, -true.dens, -est.dens, -est.dens.ss, -true.dens.ss)
 
 save(KL2,file ='KL2.Rdata')
@@ -175,8 +171,8 @@ perc.ICs.K <- out.td %>%
 ## The same in long format for plots
 perc.ICs.K.LONG <- perc.ICs.K %>% 
   pivot_longer(cols = c(AIC,AIC3,BIC,aBIC), 
-                                names_to = 'IC', 
-                                values_to = 'percentage') %>% 
+               names_to = 'IC', 
+               values_to = 'percentage') %>% 
   filter(!is.na(percentage)) %>% 
   mutate(J = case_when(J== 7 ~ 'J = 7',
                        J== 15 ~ 'J = 15'),
@@ -217,7 +213,7 @@ KL2 %>%
   #  alpha = .9, 
   #  hjust = 0) +
   geom_vline(data = perc.ICs.K.LONG,
-             mapping = aes(xintercept= est.K, color = IC), size=1, alpha = .5, linetype = 'solid') +
+             mapping = aes(xintercept= est.K, color = IC), size=.5, alpha = .8, linetype = 'solid') +
   
   ## 
   facet_grid(fct_relevel(N,'500','1000','2000', '5000') ~ 
@@ -230,43 +226,8 @@ KL2 %>%
   theme_bw() + theme1 +
   theme(axis.text.x = element_text(size=11, color = "black"), 
         #legend.position = 'none'
-        )
+  )
 
 ## --- IN PROGRESS
 
-<<<<<<< HEAD
 
-=======
-## Add density of sum scores P+  (dens.ss) in estimated models
-startt <- Sys.time()
-test1 <- out2.td %>%
-  filter(Rep <= 50) %>% 
-  mutate(est.dens.ss = map2(.x = est.dens, .y = R, 
-                                 ~start.level(density = .x, R = .y)$px.plus)) %>% 
-  left_join(true_mods %>% dplyr::select(TrueMod, true.dens.ss) , by = 'TrueMod') 
-endt <- Sys.time()
-endt-startt
-
-setwd("/home/rstudio/efs")
-save(test1,file ='test1.Rdata')
-
-load('test1.Rdata')
-
-
-testKLplus <- test1 %>% 
-  mutate(KL.Pp = map2(.x =est.dens.ss, 
-                      .y = true.dens.ss,
-                      ~kullback_leibler_distance(P = .x, # P
-                                                 Q = .y, #Q
-                                                 testNA = FALSE, unit ="log", 
-                                                 epsilon = 0.000000001))) %>%
-  mutate(KL.P = map2(.x =est.dens, 
-                     .y =true.dens,
-                     ~kullback_leibler_distance(P = .x, # P
-                                                Q = .y, #Q
-                                                testNA = FALSE, unit ="log", 
-                                                epsilon = 0.000000001))) %>%        
-  dplyr::select(-R, -true.dens, -est.dens, -est.dens.ss, -true.dens.ss)
-
-save(testKLplus,file ='testKLplus.Rdata')
->>>>>>> b849a218f6c30a27effed205cbde431ae294b592
