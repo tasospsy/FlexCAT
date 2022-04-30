@@ -11,6 +11,7 @@ source("FlexCAT/0.Functions.R")
 ## Load files output from EFS
 setwd("/home/rstudio/efs")
 load("true_mods.Rdata")
+load("out2.td.Rdata")
 load("est1k.Rdata")
 out1 <- est1k
 load("est1k2.Rdata")
@@ -211,15 +212,33 @@ testKL %>%
 
 ## Add density of sum scores P+  (dens.ss) in estimated models
 startt <- Sys.time()
-plan(multisession, gc = TRUE)
-test <- out2.td %>%
-  filter(Rep == 1) %>% 
-  mutate(est.dens.ss = future_map2(.x = est.dens, .y = R, 
-                                 ~start.level(density = .x, R = .y)$px.plus))
+test1 <- out2.td %>%
+  filter(Rep <= 50) %>% 
+  mutate(est.dens.ss = map2(.x = est.dens, .y = R, 
+                                 ~start.level(density = .x, R = .y)$px.plus)) %>% 
+  left_join(true_mods %>% dplyr::select(TrueMod, true.dens.ss) , by = 'TrueMod') 
 endt <- Sys.time()
 endt-startt
 
-#%>% 
-  left_join(true_mods %>% dplyr::select(TrueMod, true.dens.ss) , by = 'TrueMod') 
+setwd("/home/rstudio/efs")
+save(test1,file ='test1.Rdata')
+
+load('test1.Rdata')
 
 
+testKLplus <- test1 %>% 
+  mutate(KL.Pp = map2(.x =est.dens.ss, 
+                      .y = true.dens.ss,
+                      ~kullback_leibler_distance(P = .x, # P
+                                                 Q = .y, #Q
+                                                 testNA = FALSE, unit ="log", 
+                                                 epsilon = 0.000000001))) %>%
+  mutate(KL.P = map2(.x =est.dens, 
+                     .y =true.dens,
+                     ~kullback_leibler_distance(P = .x, # P
+                                                Q = .y, #Q
+                                                testNA = FALSE, unit ="log", 
+                                                epsilon = 0.000000001))) %>%        
+  dplyr::select(-R, -true.dens, -est.dens, -est.dens.ss, -true.dens.ss)
+
+save(testKLplus,file ='testKLplus.Rdata')
