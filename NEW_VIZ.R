@@ -21,13 +21,13 @@ load("KL2.Rdata")
 ## Specify a general theme for the plots
 theme1 <- theme(plot.background = element_rect(fill = "white", color = NA), #background color
                 text = element_text(family = "mono", color = "black"), # color of all text in the plot 
-                plot.title = element_text(hjust = 0.5, color = "black", size = 11), # specs of the title
+                plot.title = element_text(hjust = 0.5, color = "black", size = 12), # specs of the title
                 strip.text = element_text(colour = "black", size = 14), # specs of the text inside plot
                 panel.grid.major.x = element_line(size = .5), # change the grid layout
                 panel.grid.major.y = element_line(size = .5), # change the grid layout
                 panel.grid.minor.x = element_blank(), # remove the grid layout
                 panel.grid.minor.y = element_blank(), # remove the grid layout
-                axis.text=element_text(size=11, color = "black"), # specs of the text in axis
+                axis.text=element_text(size=14, color = "black"), # specs of the text in axis
                 axis.text.x = element_blank(),
                 legend.position = "bottom", # legend down
                 #legend.title = element_blank(), # remove legend title,
@@ -138,7 +138,7 @@ KL2 %>%
              scales = 'free_x') + 
   labs(title = "",
        x = "Number of estimated classes",
-       y = "Kullbach - Leibler distance") +
+       y = "Kullback - Leibler distance") +
   theme_bw() + theme1 +
   theme(axis.text.x = element_text(size=11, color = "black"), 
         #legend.position = 'none'
