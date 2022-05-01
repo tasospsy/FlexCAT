@@ -29,9 +29,7 @@ truensim1k <- left_join(true_mods, simdat1k, by = 'TrueMod') %>%
 ## ----------------
 startt <- Sys.time()
 plan(multisession, gc = TRUE)
-est10 <- truensim1k %>% 
-  mutate(Rep = as.numeric(Rep)) %>% 
-  filter(Rep <= 10) %>% 
+out <- truensim1k %>% 
   group_by(Class) %>% 
   mutate(est.Model = future_map2(Dataset,
                                  Class,
@@ -47,6 +45,6 @@ endt <- Sys.time()
 endt - startt
 
 setwd("/home/rstudio/efs")
-save(est10, file = 'est10.Rdata') # Time difference of 7.247467 hours
+save(out, file = 'out.Rdata') # Time difference of 7.247467 hours
 
 

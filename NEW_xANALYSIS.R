@@ -16,17 +16,8 @@ source("FlexCAT/0.Functions.R")
 ## Load files output from EFS
 setwd("/home/rstudio/efs")
 load("true_mods.Rdata")
-load('out2.td.Rdata')
-load("est1k.Rdata")
-out1 <- est1k
-load("est1k2.Rdata")
-out2 <- est1k2
-rm(est1k2)
-rm(est1k)
-# Merge them
-out <- bind_rows(out1, out2)
-rm(out1)
-rm(out2)
+load('out.Rdata') # 43GB!
+
 ## TIDY PART
 out.td <- out %>% unnest_wider(est.Model) %>% 
   unnest_longer(table.stat, names_repair = 'unique') %>% 
@@ -42,8 +33,8 @@ out.td <- out %>% unnest_wider(est.Model) %>%
   rename_at(vars(starts_with('by')), ~str_remove(.x,'by')) %>% 
   rename('K' = 'Class.x', 'N' = 'N.y')
 
-setwd("/home/rstudio/efs")
-save(out.td,file ='out-td.Rdata')
+#setwd("/home/rstudio/efs")
+#save(out.td,file ='out-td.Rdata')
 
 pertable <- out.td %>% 
   pivot_longer(cols = c(AIC,AIC3,BIC,aBIC), 
@@ -54,7 +45,7 @@ pertable <- out.td %>%
   mutate(per = n / 100 * 100) %>% dplyr::select(-n) %>% 
   pivot_wider(names_from = 'IC', values_from = 'per') 
 
-save(pertable,file ='pertable.Rdata')
+#save(pertable,file ='pertable.Rdata')
 
 
 ## ------------------
@@ -88,7 +79,7 @@ out2.td <- out %>% unnest_wider(est.Model) %>%
   # join true P+
   left_join(true_mods %>% dplyr::select(TrueMod, true.dens.ss) , by = 'TrueMod')
 
-# 30/4/2022 ! 40GB !
+# 30/4/2022 ! 45GB !
 #setwd("/home/rstudio/efs")
 #save(out2.td,file ='out2.td.Rdata')
 
@@ -111,5 +102,5 @@ KL2 <- out2.td %>%
 save(KL2,file ='KL2.Rdata')
 
 
-
+out2.td
 
