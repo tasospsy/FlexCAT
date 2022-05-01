@@ -62,6 +62,7 @@ true_mods <- true_mods %>%
 #save(true_mods,file ='true_mods.Rdata')
 
 ## WARNING: TIME INTESIVE ~ 5 HRS!! ~40GB!
+startt <- Sys.time()
 out2.td <- out %>% unnest_wider(est.Model) %>% 
   left_join(true_mods , by = 'TrueMod') %>%
   unnest(table.stat, names_repair = 'unique') %>% 
@@ -75,11 +76,13 @@ out2.td <- out %>% unnest_wider(est.Model) %>%
          R = map2(.x = R, .y = est.K, ~ .x[[.y]])) %>% 
   # calculate P+
   mutate(est.dens.ss = map2(.x = est.dens, .y = R, 
-                            ~start.level(density = .x, R = .y)$px.plus)) %>% 
+                            ~start.level(density = .x, R = .y-1)$px.plus)) %>% 
   # join true P+
   left_join(true_mods %>% dplyr::select(TrueMod, true.dens.ss) , by = 'TrueMod')
+endt <- Sys.time()
+endt-startt
 
-# 30/4/2022 ! 45GB !
+# 30/4/2022 ! 42GB !
 #setwd("/home/rstudio/efs")
 #save(out2.td,file ='out2.td.Rdata')
 
@@ -102,5 +105,4 @@ KL2 <- out2.td %>%
 save(KL2,file ='KL2.Rdata')
 
 
-out2.td
 
