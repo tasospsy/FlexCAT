@@ -102,8 +102,11 @@ tableICs <- count.ICs.K %>%
   group_by(TrueMod) %>% group_split()
 
 opts <- options(knitr.kable.NA = "-")
+titles <- c()
 for(i in 1:length(tableICs)) {
-  print(knitr::kable(tableICs[[i]] %>% dplyr::select(-TrueMod), caption = 'test'))
+  titles[i] <- paste('True model:',tableICs[[i]]$K[1],'&', tableICs[[i]]$J[1])
+  print(knitr::kable(tableICs[[i]] %>% dplyr::select(-TrueMod, -K, -J), 
+                     caption = titles[i]))
 }
 ##=====================================
 ## PLOT KL smooth spline per condition 
