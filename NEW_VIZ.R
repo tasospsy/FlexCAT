@@ -12,12 +12,12 @@ setwd("/Users/tasospsy/Google Drive/_UvA/Master Thesis/")
 
 ## Load required code and packages
 source("FlexCAT/0.Functions.R")
-library(plotly)
+#library(plotly)
 
 colors <- RColorBrewer::brewer.pal(9, 'Paired')[c(3,4,7,8)]
 ## load data
 load("data/out-td.Rdata")
-load("out2.td.Rdata")
+load("data/out2.td.Rdata")
 load("data/KL2.Rdata")
 
 ## Specify a general theme for the plots
@@ -92,8 +92,22 @@ count.ICs.K <- out.td %>%
                        K == 8 ~  'K = 8',
                        K == 12 ~ 'K = 12'))
 
+##==========================================
+## Table with percentages per condition cell
+##==========================================
+tableICs <- count.ICs.K %>% 
+  pivot_wider(names_from = est.K, values_from = n) %>% 
+  relocate(c(`2`, `3`), .before = `4`) %>% 
+  arrange(fct_relevel(N,'500','1000','2000', '5000')) %>% 
+  group_by(TrueMod) %>% group_split()
 
+opts <- options(knitr.kable.NA = "-")
+for(i in 1:length(tableICs)) {
+  print(knitr::kable(tableICs[[i]] %>% dplyr::select(-TrueMod), caption = 'test'))
+}
+##=====================================
 ## PLOT KL smooth spline per condition 
+##=====================================
 KL2 %>% 
   mutate(J = case_when(J== 7 ~ 'J = 7',
                        J== 15 ~ 'J = 15'),
