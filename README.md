@@ -13,10 +13,9 @@ University of Amsterdam
 
 supervised by  Niels Smits and  L. Andries van der Ark
 
-<aside>
+>
 🐈‍⬛ Data are not included, yet.
-
-</aside>
+>
 
 - **Abstract:**
     
@@ -30,10 +29,9 @@ supervised by  Niels Smits and  L. Andries van der Ark
 - `SVLdata_generation.R` Generates data according to six different latent class models which will serve as population models in the upcoming simulation. Stores them in a dataframe.
 - `model_estimation.R` Runs the whole simulation design. Note: It needs time!
 
-<aside>
+>
 🐈‍⬛ I set up large virtual machines in AWS to save some time. Code and explanation pending...
-
-</aside>
+>
 
 - `xANALYSIS.R` Results analysis and tables
 - `VIZ.R` Code for the visualisations. You can find some output in the *Figures* folder
