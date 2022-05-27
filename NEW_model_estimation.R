@@ -12,13 +12,13 @@ mydir <- "/home/rstudio"
 setwd(mydir)
 source("FlexCAT/0.Functions.R")
 
-load("datatorun/simdat1k.Rdata")
+load("data/simdat1k.Rdata")
 #load("simdat.Rdata")
 
 #load("simdatMED.Rdata")
 #load("simdat_small.Rdata")
 
-load("datatorun/true_mods.Rdata")
+load("data/true_mods.Rdata")
 #load("true_modsMED.Rdata")
 
 truensim1k <- left_join(true_mods, simdat1k, by = 'TrueMod') %>% 

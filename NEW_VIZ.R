@@ -34,8 +34,8 @@ theme1 <- theme(plot.background = element_rect(fill = "white", color = NA), #bac
                 legend.position = "bottom", # legend down
                 #legend.title = element_blank(), # remove legend title,
                 legend.text = element_text(colour = "black", size = 9),
-                plot.title = element_markdown(size = 12,hjust = 0,lineheight = 1, 
-                color = "black", family = 'mono'),
+                #plot.title = element_markdown(size = 12,hjust = 0,lineheight = 1, 
+                #color = "black", family = 'mono'),
                 strip.background =element_rect(fill="grey100")
                 )
 
@@ -177,9 +177,29 @@ p2 <- count.ICs.K  %>%
 p2  
 
 ## In progress
-
+library(plotly)
 fig2 <- ggplotly(p2, tooltip = c('est.K', 'n'))
 fig2
 
 ps <- p1 / p2
 ps
+
+tb <- tibble(
+  'Sample size' = c(500, 1000, 2000, 5000), 
+  c('cell 1', 'cell 2','cell 3','cell 4'),
+  c('cell 5', 'cell 6','cell 7','cell 8'),
+  c( 'cell 9','cell 10','cell 11', 'cell 12'),
+   c('cell 13','cell 14','cell 15','cell 16' ),
+   c('cell 17','cell 18','cell 19', 'cell 20'),
+   c('cell 21','cell 22','cell 23', 'cell 24')
+)
+library(kableExtra)
+kable(
+  tb,
+  format = "latex",
+booktabs = TRUE,
+escape = FALSE,
+col.names = c("Sample size", "J = 7","J = 7","J = 7","J = 15","J = 15","J = 15" ),
+align = c("l", "c", "c", "c"),
+caption = "Test"
+)
